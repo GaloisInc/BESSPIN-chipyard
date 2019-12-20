@@ -16,6 +16,7 @@ import freechips.rocketchip.devices.debug.{Debug}
 
 case object BuildTop extends Field[(Clock, Bool, Parameters) => TopModule[Top]]
 case object BuildTopWithDTM extends Field[(Clock, Bool, Parameters) => TopWithDTMModule[TopWithDTM]]
+case object BuildTopGFE extends Field[(Clock, Bool, Parameters) => TopGFEModule[TopGFE]]
 
 /**
  * Test harness using TSI to bringup the system
@@ -84,4 +85,35 @@ class TestHarnessWithDTM(implicit p: Parameters) extends Module
   })
 
   Debug.connectDebug(dut.debug, clock, reset.asBool, io.success)
+}
+
+class TestHarnessGFE(implicit val p: Parameters) extends Module {
+  val io = IO(new Bundle {
+    val success = Output(Bool())
+  })
+
+  // force Chisel to rename module
+  override def desiredName = "TestHarness"
+
+  val dut = p(BuildTopGFE)(clock, reset.toBool, p)
+
+  dut.debug := DontCare
+  dut.connectSimAXIMem()
+  dut.connectSimAXIMMIO()
+  dut.dontTouchPorts()
+  dut.tieOffInterrupts()
+  dut.l2_frontend_bus_axi4.foreach(axi => {
+    axi.tieoff()
+    experimental.DataMirror.directionOf(axi.ar.ready) match {
+      case core.ActualDirection.Input =>
+        axi.r.bits := DontCare
+        axi.b.bits := DontCare
+      case core.ActualDirection.Output =>
+        axi.aw.bits := DontCare
+        axi.ar.bits := DontCare
+        axi.w.bits := DontCare
+    }
+  })
+
+  io.success := true.B
 }

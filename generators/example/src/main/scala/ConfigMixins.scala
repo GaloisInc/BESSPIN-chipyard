@@ -4,8 +4,8 @@ import chisel3._
 import chisel3.util.{log2Up}
 
 import freechips.rocketchip.config.{Field, Parameters, Config}
-import freechips.rocketchip.subsystem.{RocketTilesKey, WithRoccExample, WithNMemoryChannels, WithNBigCores, WithRV32}
-import freechips.rocketchip.diplomacy.{LazyModule, ValName}
+import freechips.rocketchip.subsystem.{RocketTilesKey, WithRoccExample, WithNMemoryChannels, WithNBigCores, WithRV32, HasResetVectorWire}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, ValName}
 import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.tile.{XLen, BuildRoCC, TileKey, LazyRoCC}
 
@@ -182,3 +182,14 @@ class WithInitZeroTop extends Config((site, here, up) => {
     Module(LazyModule(new TopWithInitZero()(p)).module)
 })
 // DOC include end: WithInitZero
+
+class WithGFETop extends Config((site, here, up) => {
+  case BuildTopGFE => (clock: Clock, reset: Bool, p: Parameters) => {
+    Module(LazyModule(new TopGFE()(p)).module)
+  }
+})
+
+trait HasResetVectorImp extends LazyModuleImp
+  with HasResetVectorWire {
+  global_reset_vector := 0x70000000L.U
+}

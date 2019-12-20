@@ -101,3 +101,20 @@ class TopWithInitZero(implicit p: Parameters) extends Top
 class TopWithInitZeroModuleImp(l: TopWithInitZero) extends TopModule(l)
   with HasPeripheryInitZeroModuleImp
 // DOC include end: TopWithInitZero
+
+class TopGFE(implicit p: Parameters) extends System
+    with HasAsyncExtInterrupts
+    with CanHaveMasterAXI4MemPort
+    with CanHaveMasterAXI4MMIOPort
+    with CanHaveSlaveAXI4Port {
+  override lazy val module = new TopGFEModule(this)
+}
+
+class TopGFEModule[+L <: TopGFE](l: L) extends SystemModule(l)
+    with HasRTCModuleImp
+    with HasExtInterruptsModuleImp
+    with HasResetVectorImp
+    with CanHaveMasterAXI4MemPortModuleImp
+    with CanHaveMasterAXI4MMIOPortModuleImp
+    with CanHaveSlaveAXI4PortModuleImp
+    with DontTouch
