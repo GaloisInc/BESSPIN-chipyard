@@ -116,4 +116,5 @@ class TestHarnessGFE(implicit val p: Parameters) extends Module {
   })
 
   io.success := true.B
+  dut.traceout.ready := false.B
 }

@@ -12,8 +12,8 @@ import freechips.rocketchip.system._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import freechips.rocketchip.jtag.xilinxAddrs
 import boom.common._
-import freechips.rocketchip.galois.devices._
 
 // scalastyle:off
 

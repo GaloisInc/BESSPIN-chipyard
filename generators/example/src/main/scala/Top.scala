@@ -11,6 +11,7 @@ import freechips.rocketchip.util.DontTouch
 import testchipip._
 
 import utilities.{System, SystemModule}
+import bluespec.system.{GFESystem, GFESystemModule}
 
 import sifive.blocks.devices.gpio._
 
@@ -102,7 +103,7 @@ class TopWithInitZeroModuleImp(l: TopWithInitZero) extends TopModule(l)
   with HasPeripheryInitZeroModuleImp
 // DOC include end: TopWithInitZero
 
-class TopGFE(implicit p: Parameters) extends System
+class TopGFE(implicit p: Parameters) extends GFESystem
     with HasAsyncExtInterrupts
     with CanHaveMasterAXI4MemPort
     with CanHaveMasterAXI4MMIOPort
@@ -110,7 +111,7 @@ class TopGFE(implicit p: Parameters) extends System
   override lazy val module = new TopGFEModule(this)
 }
 
-class TopGFEModule[+L <: TopGFE](l: L) extends SystemModule(l)
+class TopGFEModule[+L <: TopGFE](l: L) extends GFESystemModule(l)
     with HasRTCModuleImp
     with HasExtInterruptsModuleImp
     with HasResetVectorImp
