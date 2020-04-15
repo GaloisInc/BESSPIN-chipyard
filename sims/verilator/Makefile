@@ -17,6 +17,12 @@ sim_dir=$(abspath .)
 include $(base_dir)/variables.mk
 
 #########################################################################################
+# Define SSITH Processor Source
+#########################################################################################
+SSITH_PROC ?= BLUESPEC_P2
+SSITH_PROC_DIR ?= /Users/dhand/git/Flute/src_SSITH_P2/xilinx_ip/hdl
+
+#########################################################################################
 # name of simulator (used to generate *.f arguments file)
 #########################################################################################
 sim_name = verilator
@@ -80,6 +86,8 @@ VERILATOR_NONCC_OPTS = \
 	$(shell if ! grep -iq "module.*ariane" $(build_dir)/*.*v; then echo "$(CHIPYARD_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi) \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
+	-I$(SSITH_PROC_DIR) \
+	+define+$(SSITH_PROC) \
 	-f $(sim_common_files) \
 	$(sim_vsrcs)
 
