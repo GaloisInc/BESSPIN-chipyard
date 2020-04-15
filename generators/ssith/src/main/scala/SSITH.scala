@@ -166,7 +166,7 @@ class SSITHTile(
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
-  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("eth-zurich,SSITH", "riscv")) {
+  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("galois,SSITH", "riscv")) {
     override def parent = Some(ResourceAnchors.cpus)
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
@@ -227,7 +227,6 @@ class SSITHTile(
     * Setup AXI4 memory interface.
     * THESE ARE CONSTANTS.
     */
-  val portName = "SSITH-mem-port-axi4"
   val idBits = 4
   val beatBytes = masterPortBeatBytes
   val sourceBits = 1 // equiv. to userBits (i think)
@@ -235,7 +234,7 @@ class SSITHTile(
   val memAXI4Node = AXI4MasterNode(
     Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
-        name = portName,
+        name = "SSITH-mem-port-axi4",
         id = IdRange(0, 1 << idBits))))))
 
   val mmioAXI4Node = AXI4MasterNode(
@@ -276,50 +275,9 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
   // annotate the parameters
   Annotated.params(this, outer.SSITHParams)
 
-  val debugBaseAddr = BigInt(0x0) // CONSTANT: based on default debug module
-  val debugSz = BigInt(0x1000) // CONSTANT: based on default debug module
-  val tohostAddr = BigInt(0x80001000L) // CONSTANT: based on default sw (assume within extMem region)
-  val fromhostAddr = BigInt(0x80001040L) // CONSTANT: based on default sw (assume within extMem region)
-
-  // have the main memory, bootrom, debug regions be executable
-  val executeRegionBases = Seq(p(ExtMem).get.master.base,      p(BootROMParams).address, debugBaseAddr, BigInt(0x0), BigInt(0x0))
-  val executeRegionSzs   = Seq(p(ExtMem).get.master.size, BigInt(p(BootROMParams).size),       debugSz, BigInt(0x0), BigInt(0x0))
-  val executeRegionCnt   = executeRegionBases.length
-
-  // have the main memory be cached, but don't cache tohost/fromhost addresses
-  // TODO: current cache subsystem can only support 1 cacheable region... so cache AFTER the tohost/fromhost addresses
-  val wordOffset = 0x40
-  val (cacheableRegionBases, cacheableRegionSzs) = if (outer.SSITHParams.core.enableToFromHostCaching) {
-    val bases = Seq(p(ExtMem).get.master.base, BigInt(0x0), BigInt(0x0), BigInt(0x0), BigInt(0x0))
-    val sizes   = Seq(p(ExtMem).get.master.size, BigInt(0x0), BigInt(0x0), BigInt(0x0), BigInt(0x0))
-    (bases, sizes)
-  } else {
-    val bases = Seq(                                                          fromhostAddr + 0x40,              p(ExtMem).get.master.base, BigInt(0x0), BigInt(0x0), BigInt(0x0))
-    val sizes = Seq(p(ExtMem).get.master.size - (fromhostAddr + 0x40 - p(ExtMem).get.master.base), tohostAddr - p(ExtMem).get.master.base, BigInt(0x0), BigInt(0x0), BigInt(0x0))
-    (bases, sizes)
-  }
-  val cacheableRegionCnt   = cacheableRegionBases.length
-
-  val traceInstSz = (new freechips.rocketchip.rocket.TracedInstruction).getWidth
-
   // connect the SSITH core
   val core = Module(new SSITHCoreBlackbox(
-    // traceport params
-    traceportEnabled = outer.SSITHParams.trace,
-    traceportSz = (outer.SSITHParams.core.retireWidth * traceInstSz),
-
     // general core params
-    xLen = p(XLen),
-    rasEntries = outer.SSITHParams.core.rasEntries,
-    btbEntries = outer.SSITHParams.core.btbEntries,
-    bhtEntries = outer.SSITHParams.core.bhtEntries,
-    exeRegCnt = executeRegionCnt,
-    exeRegBase = executeRegionBases,
-    exeRegSz = executeRegionSzs,
-    cacheRegCnt = cacheableRegionCnt,
-    cacheRegBase = cacheableRegionBases,
-    cacheRegSz = cacheableRegionSzs,
-    debugBase = debugBaseAddr,
     axiAddrWidth = 64, // CONSTANT: addr width for TL can differ
     axiDataWidth = outer.beatBytes * 8,
     axiUserWidth = outer.sourceBits,
@@ -329,30 +287,10 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
   core.CLK := clock
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
-
-//  core.io.boot_addr_i := constants.reset_vector
-//  core.io.hart_id_i := constants.hartid
-
   core.cpu_external_interrupt_req := Cat(0.U(11.W), outer.getSSITHInterrupts().asUInt())
-//  outer.connectSSITHInterrupts(core.cpu_external_interrupt_req(0), core.cpu_external_interrupt_req(1),
-//    core.cpu_external_interrupt_req(2), core.cpu_external_interrupt_req(3))
 
   if (outer.SSITHParams.trace) {
-    // unpack the trace io from a UInt into Vec(TracedInstructions)
-    //outer.traceSourceNode.bundle <> core.io.trace_o.asTypeOf(outer.traceSourceNode.bundle)
-
-//    for (w <- 0 until outer.SSITHParams.core.retireWidth) {
-//      outer.traceSourceNode.bundle(w).clock     := core.io.trace_o(traceInstSz*w + 0).asClock
-//      outer.traceSourceNode.bundle(w).reset     := core.io.trace_o(traceInstSz*w + 1)
-//      outer.traceSourceNode.bundle(w).valid     := core.io.trace_o(traceInstSz*w + 2)
-//      outer.traceSourceNode.bundle(w).iaddr     := core.io.trace_o(traceInstSz*w + 42, traceInstSz*w + 3)
-//      outer.traceSourceNode.bundle(w).insn      := core.io.trace_o(traceInstSz*w + 74, traceInstSz*w + 43)
-//      outer.traceSourceNode.bundle(w).priv      := core.io.trace_o(traceInstSz*w + 77, traceInstSz*w + 75)
-//      outer.traceSourceNode.bundle(w).exception := core.io.trace_o(traceInstSz*w + 78)
-//      outer.traceSourceNode.bundle(w).interrupt := core.io.trace_o(traceInstSz*w + 79)
-//      outer.traceSourceNode.bundle(w).cause     := core.io.trace_o(traceInstSz*w + 87, traceInstSz*w + 80)
-//      outer.traceSourceNode.bundle(w).tval      := core.io.trace_o(traceInstSz*w + 127, traceInstSz*w + 88)
-//    }
+    require(false, "Not currently implemented!")
   } else {
     outer.traceSourceNode.bundle := DontCare
     outer.traceSourceNode.bundle map (t => t.valid := false.B)
@@ -447,38 +385,16 @@ class SSITHAXI4Bundle(params: AXI4BundleParameters) extends GenericParameterized
   val rready   = Output(Bool())
 }
 
-class SSITHCoreBlackbox(
-                          traceportEnabled: Boolean,
-                          traceportSz: Int,
-                          xLen: Int,
-                          rasEntries: Int,
-                          btbEntries: Int,
-                          bhtEntries: Int,
-                          execRegAvail: Int = 5,
-                          exeRegCnt: Int,
-                          exeRegBase: Seq[BigInt],
-                          exeRegSz: Seq[BigInt],
-                          cacheRegAvail: Int = 5,
-                          cacheRegCnt: Int,
-                          cacheRegBase: Seq[BigInt],
-                          cacheRegSz: Seq[BigInt],
-                          debugBase: BigInt,
-                          axiAddrWidth: Int,
+class SSITHCoreBlackbox(  axiAddrWidth: Int,
                           axiDataWidth: Int,
                           axiUserWidth: Int,
                           axiIdWidth: Int)
-  extends ExtModule(
-//    Map(
-//      "AXI_ADDRESS_WIDTH" -> IntParam(axiAddrWidth),
-//      "AXI_DATA_WIDTH" -> IntParam(axiDataWidth),
-//      "AXI_USER_WIDTH" -> IntParam(axiUserWidth),
-//      "AXI_ID_WIDTH" -> IntParam(axiIdWidth))
-  )
+  extends ExtModule()
 {
   val CLK = IO(Input(Clock()))
   val RST_N = IO(Input(Bool()))
-  val master0 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(64, 64, 4, 0, false)))
-  val master1 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(64, 64, 4, 0, false)))
+  val master0 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(axiAddrWidth, axiDataWidth, axiIdWidth, axiUserWidth, false)))
+  val master1 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(axiAddrWidth, axiDataWidth, axiIdWidth, axiUserWidth, false)))
   val cpu_external_interrupt_req = IO(Input(UInt(16.W)))
   val tv_verifier_info_tx_tvalid = IO(Output(Bool()))
   val tv_verifier_info_tx_tdata = IO(Output(UInt(608.W)))
