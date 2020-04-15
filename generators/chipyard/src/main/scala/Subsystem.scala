@@ -6,23 +6,22 @@
 package chipyard
 
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo}
-
+import chisel3.internal.sourceinfo.SourceInfo
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMInterrupt}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{RocketTileLogicalTreeNode, LogicalModuleTree}
+import freechips.rocketchip.diplomaticobjectmodel.model.OMInterrupt
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, RocketTileLogicalTreeNode}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.amba.axi4._
-
-import boom.common.{BoomTile, BoomTilesKey, BoomCrossingKey, BoomTileParams}
-import ariane.{ArianeTile, ArianeTilesKey, ArianeCrossingKey, ArianeTileParams}
+import boom.common.{BoomCrossingKey, BoomTile, BoomTileParams, BoomTilesKey}
+import ariane.{ArianeCrossingKey, ArianeTile, ArianeTileParams, ArianeTilesKey}
+import ssith.{SSITHCrossingKey, SSITHTile, SSITHTileParams, SSITHTilesKey}
 
 trait HasChipyardTiles extends HasTiles
   with CanHavePeripheryPLIC
@@ -35,13 +34,15 @@ trait HasChipyardTiles extends HasTiles
   protected val rocketTileParams = p(RocketTilesKey)
   protected val boomTileParams = p(BoomTilesKey)
   protected val arianeTileParams = p(ArianeTilesKey)
+  protected val ssithTileParams = p(SSITHTilesKey)
 
   // crossing can either be per tile or global (aka only 1 crossing specified)
   private val rocketCrossings = perTileOrGlobalSetting(p(RocketCrossingKey), rocketTileParams.size)
   private val boomCrossings = perTileOrGlobalSetting(p(BoomCrossingKey), boomTileParams.size)
   private val arianeCrossings = perTileOrGlobalSetting(p(ArianeCrossingKey), arianeTileParams.size)
+  private val ssithCrossings = perTileOrGlobalSetting(p(SSITHCrossingKey), ssithTileParams.size)
 
-  val allTilesInfo = (rocketTileParams ++ boomTileParams ++ arianeTileParams) zip (rocketCrossings ++ boomCrossings ++ arianeCrossings)
+  val allTilesInfo = (rocketTileParams ++ boomTileParams ++ arianeTileParams ++ ssithTileParams) zip (rocketCrossings ++ boomCrossings ++ arianeCrossings ++ ssithCrossings)
 
   // Make a tile and wire its nodes into the system,
   // according to the specified type of clock crossing.
@@ -64,6 +65,10 @@ trait HasChipyardTiles extends HasTiles
         case a: ArianeTileParams => {
           val t = LazyModule(new ArianeTile(a, crossing, PriorityMuxHartIdFromSeq(arianeTileParams), logicalTreeNode))
           (t, t.rocketLogicalTree) // TODO FIX rocketLogicalTree is not a member of the superclass, both child classes define it separately
+        }
+        case s: SSITHTileParams => {
+          val t = LazyModule(new SSITHTile(s, crossing, PriorityMuxHartIdFromSeq(ssithTileParams), logicalTreeNode))
+          (t, t.rocketLogicalTree)
         }
       }
       connectMasterPortsToSBus(tile, crossing)
