@@ -1,4 +1,4 @@
-#define DRAM_BASE 0xC0000000
+#define DRAM_BASE 0x80000000
 
 // boot all cores (only hart 0) and jump to main program execution
 .section .text.start, "ax", @progbits
