@@ -101,7 +101,7 @@ class WithFireSimConfigTweaks extends Config(
   new WithGFEBootROM ++ // needed to support FireSim-as-top
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
   new WithoutClockGating ++
-  new WithTraceIO ++
+ // new WithTraceIO ++
   new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 16L) ++ // 16 GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
@@ -190,3 +190,12 @@ class FireSimArianeConfig extends Config(
   new WithDefaultMemModel ++
   new WithFireSimConfigTweaks ++
   new chipyard.ArianeConfig)
+
+//**********************************************************************************
+//* SSITH Configurations
+//*********************************************************************************/
+class FireSimSSITHConfig extends Config(
+  new WithDefaultFireSimBridges ++
+    new WithDefaultMemModel ++
+    new WithFireSimConfigTweaks ++
+    new chipyard.SSITHConfig)
