@@ -2,7 +2,8 @@ package ssith
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ExtModule, IntParam, StringParam}
+import chisel3.experimental.{ChiselAnnotation, ExtModule, IntParam, RunFirrtlTransform, StringParam}
+import firrtl.transforms.{BlackBoxResourceAnno, BlackBoxSourceHelper}
 
 import scala.collection.mutable.ListBuffer
 import freechips.rocketchip.config._
@@ -17,7 +18,6 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
-
 
 case object SSITHCrossingKey extends Field[Seq[RocketCrossingParams]](List(RocketCrossingParams()))
 
@@ -75,8 +75,8 @@ class WithSSITHMMIOPort extends Config((site, here, up) => {
 
 class WithSSITHMemPort extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
-    base = x"C000_0000",
-    size = x"1000_0000",
+    base = x"8000_0000",
+    size = x"8000_0000",
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
 })
@@ -418,4 +418,9 @@ class SSITHCoreBlackbox(  axiAddrWidth: Int,
 
   // add wrapper/blackbox after it is pre-processed
   // addResource("/vsrc/SSITHP2Core.v")
+  val anno = new ChiselAnnotation with RunFirrtlTransform {
+    def toFirrtl = BlackBoxResourceAnno(toNamed, "/vsrc/SSITHCore.v")
+    def transformClass = classOf[BlackBoxSourceHelper]
+  }
+  chisel3.experimental.annotate(anno)
 }
