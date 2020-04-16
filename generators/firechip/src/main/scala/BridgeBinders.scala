@@ -4,29 +4,25 @@ package firesim.firesim
 
 import chisel3._
 import chisel3.experimental.annotate
-
-import freechips.rocketchip.config.{Field, Config, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.devices.debug.HasPeripheryDebugModuleImp
-import freechips.rocketchip.subsystem.{CanHaveMasterAXI4MemPortModuleImp}
-import freechips.rocketchip.tile.{RocketTile}
+import freechips.rocketchip.subsystem.CanHaveMasterAXI4MemPortModuleImp
+import freechips.rocketchip.tile.RocketTile
 import sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
-
-import testchipip.{CanHavePeripherySerialModuleImp, CanHavePeripheryBlockDeviceModuleImp, CanHaveTraceIOModuleImp}
+import testchipip.{CanHavePeripheryBlockDeviceModuleImp, CanHavePeripherySerialModuleImp, CanHaveTraceIOModuleImp}
 import icenet.CanHavePeripheryIceNICModuleImp
-
 import junctions.{NastiKey, NastiParameters}
-import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.targetutils.{MemModelAnnotation}
+import midas.models.{AXI4EdgeSummary, CompleteConfig, FASEDBridge}
+import midas.targetutils.MemModelAnnotation
 import firesim.bridges._
 import firesim.configs.MemModelKey
 import tracegen.HasTraceGenTilesModuleImp
 import ariane.ArianeTile
-
-import boom.common.{BoomTile}
-
-import chipyard.iobinders.{IOBinders, OverrideIOBinder, ComposeIOBinder}
+import boom.common.BoomTile
+import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
+import ssith.SSITHTile
 
 class WithSerialBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripherySerialModuleImp) => target.serial.map(s => SerialBridge(s)(target.p)).toSeq
@@ -86,6 +82,7 @@ class WithFireSimMultiCycleRegfile extends ComposeIOBinder({
         }
       }
       case a: ArianeTile => Nil
+      case s: SSITHTile => Nil
     }
     Nil
   }
