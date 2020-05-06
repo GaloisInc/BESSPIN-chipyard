@@ -27,6 +27,7 @@ trait HasTestSuites {
     TestSuiteHelper.addRocketTestSuites(params)
     TestSuiteHelper.addBoomTestSuites(params)
     TestSuiteHelper.addArianeTestSuites(params)
+    TestSuiteHelper.addSSITHTestSuites(params)
     TestGeneration.addSuite(FastBlockdevTests)
     TestGeneration.addSuite(SlowBlockdevTests)
     if (!targetName.contains("NoNIC"))

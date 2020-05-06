@@ -2,7 +2,8 @@ package ssith
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ExtModule, IntParam, StringParam}
+import chisel3.experimental.{ChiselAnnotation, ExtModule, IntParam, RunFirrtlTransform, StringParam}
+import firrtl.transforms.{BlackBoxResourceAnno, BlackBoxSourceHelper}
 
 import scala.collection.mutable.ListBuffer
 import freechips.rocketchip.config._
@@ -83,7 +84,7 @@ class WithSSITHMemPort extends Config((site, here, up) => {
 
 class WithSSITHBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(address = 0x70000000,
-    contentFileName = s"./bootrom/bootrom.ssith.rv${site(XLen)}.img")
+    contentFileName = s"../../../bootrom/bootrom.ssith.rv${site(XLen)}.img")
 })
 
 case object SSITHTilesKey extends Field[Seq[SSITHTileParams]](Nil)
@@ -417,5 +418,11 @@ class SSITHCoreBlackbox(  axiAddrWidth: Int,
 //  require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
-  // addResource("/vsrc/SSITHP2Core.v")
+  // addResource("/vsrc/SSITHCore.v")
+
+  val anno = new ChiselAnnotation with RunFirrtlTransform {
+    def toFirrtl = BlackBoxResourceAnno(toNamed, "/vsrc/SSITHCore.v")
+    def transformClass = classOf[BlackBoxSourceHelper]
+  }
+  chisel3.experimental.annotate(anno)
 }
