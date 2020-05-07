@@ -119,3 +119,6 @@
 [submodule "tools/DRAMSim2"]
 	path = tools/DRAMSim2
 	url = https://github.com/firesim/DRAMSim2.git
+[submodule "generators/ta1-lmco"]
+	path = generators/ta1-lmco
+	url = ../ta1-lmco

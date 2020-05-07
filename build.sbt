@@ -114,9 +114,21 @@ lazy val rocketMacros  = (project in rocketChipDir / "macros")
 lazy val rocketConfig = (project in rocketChipDir / "api-config-chipsalliance/build-rules/sbt")
   .settings(commonSettings)
 
+lazy val ta1lmco = (project in file("generators/ta1-lmco/modSmoke"))
+  .dependsOn(chisel)
+  .settings(
+      commonSettings,
+      libraryDependencies ++= Seq(
+        "org.scalatest" %% "scalatest" % "3.0.5",
+	"edu.berkeley.cs" %% "chisel-iotesters" % "1.2.10"
+      )
+   )
+
+
+
 lazy val rocketchip = freshProject("rocketchip", rocketChipDir)
   .settings(commonSettings)
-  .dependsOn(chisel, hardfloat, rocketMacros, rocketConfig)
+  .dependsOn(chisel, hardfloat, rocketMacros, rocketConfig, ta1lmco)
 
 lazy val testchipip = (project in file("generators/testchipip"))
   .dependsOn(rocketchip, sifive_blocks)

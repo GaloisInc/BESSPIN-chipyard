@@ -1,0 +1,10 @@
+# Simple makefile to ensure rocket-chip has been updated with the proper hooks
+
+ROCKETCHIP := $(abspath generators/rocket-chip)
+LMCO := $(abspath generators/ta1-lmco)
+PATCH_FILE := $(ROCKETCHIP)/lmco-patched
+
+all: $(PATCH_FILE)
+
+$(PATCH_FILE):
+	@ROCKETCHIP=$(ROCKETCHIP) make -C $(LMCO)/pipeline_interrupt monitor_install
