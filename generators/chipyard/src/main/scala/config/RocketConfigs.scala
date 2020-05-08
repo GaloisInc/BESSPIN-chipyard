@@ -14,7 +14,7 @@ class RocketConfig extends Config(
   new chipyard.iobinders.WithSimSerial ++                        // drive TSI with SimSerial for testing
   new testchipip.WithTSI ++                                      // use testchipip serial offchip link
   new chipyard.config.WithNoGPIO ++                              // no top-level GPIO pins (overrides default set in sifive-blocks)
-  new chipyard.config.WithBootROM ++                             // use default bootrom
+  new chipyard.config.WithGFEBootROM ++                          // use default bootrom
   new chipyard.config.WithUART ++                                // add a UART
   new chipyard.config.WithL2TLBs(1024) ++                        // use L2 TLBs
   new chipyard.config.WithGFEClint ++
