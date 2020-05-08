@@ -68,16 +68,16 @@ class WithNormalSSITHSys extends Config((site, here, up) => {
 
 class WithSSITHMMIOPort extends Config((site, here, up) => {
   case ExtBus => Some(MasterPortParams(
-    base = x"6000_0000",
-    size = x"2000_0000",
+    base = x"2000_0000",
+    size = x"6000_0000",
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4))
 })
 
 class WithSSITHMemPort extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
-    base = x"8000_0000",
-    size = x"8000_0000",
+    base = x"C000_0000",
+    size = x"4000_0000",
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
 })
