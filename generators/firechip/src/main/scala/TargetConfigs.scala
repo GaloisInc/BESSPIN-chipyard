@@ -27,6 +27,20 @@ import firesim.configs._
 import chipyard.{BuildTop}
 import chipyard.config.ConfigValName._
 
+class WithGFEBootROM extends Config((site, here, up) => {
+  case BootROMParams => {
+    val chipyardBootROM = new File(s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+    val firesimBootROM = new File(s"./target-rtl/chipyard/bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+
+    val bootROMPath = if (chipyardBootROM.exists()) {
+      chipyardBootROM.getAbsolutePath()
+    } else {
+      firesimBootROM.getAbsolutePath()
+    }
+    BootROMParams(0x70000000L, hang = 0x70000000L, contentFileName = bootROMPath)
+  }
+})
+
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => {
     val chipyardBootROM = new File(s"./generators/testchipip/bootrom/bootrom.rv${site(XLen)}.img")
@@ -84,7 +98,7 @@ class WithTraceIO extends Config((site, here, up) => {
 
 // Tweaks that are generally applied to all firesim configs
 class WithFireSimConfigTweaks extends Config(
-  new WithBootROM ++ // needed to support FireSim-as-top
+  new WithGFEBootROM ++ // needed to support FireSim-as-top
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
   new WithoutClockGating ++
   new WithTraceIO ++

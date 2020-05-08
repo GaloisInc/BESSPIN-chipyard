@@ -1,27 +1,21 @@
 package chipyard.config
 
 import chisel3._
-import chisel3.util.{log2Up}
-
-import freechips.rocketchip.config.{Field, Parameters, Config}
-import freechips.rocketchip.subsystem.{SystemBusKey, RocketTilesKey, WithRoccExample, WithNMemoryChannels, WithNBigCores, WithRV32, CacheBlockBytes}
+import chisel3.util.log2Up
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import freechips.rocketchip.subsystem.{CacheBlockBytes, ExtMem, MasterPortParams, MemoryBusKey, MemoryPortParams, RocketTilesKey, SystemBusKey, WithNBigCores, WithNMemoryChannels, WithRV32, WithRoccExample}
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
-import freechips.rocketchip.devices.tilelink.BootROMParams
-import freechips.rocketchip.devices.debug.{Debug}
-import freechips.rocketchip.tile.{XLen, BuildRoCC, TileKey, LazyRoCC, RocketTileParams, MaxHartIdBits}
-import freechips.rocketchip.rocket.{RocketCoreParams, MulDivParams, DCacheParams, ICacheParams}
-import freechips.rocketchip.util.{AsyncResetReg}
-
-import boom.common.{BoomTilesKey}
-
+import freechips.rocketchip.devices.tilelink.{BootROMParams, CLINTKey, CLINTParams}
+import freechips.rocketchip.devices.debug.Debug
+import freechips.rocketchip.tile.{BuildRoCC, LazyRoCC, MaxHartIdBits, RocketTileParams, TileKey, XLen}
+import freechips.rocketchip.rocket.{DCacheParams, ICacheParams, MulDivParams, RocketCoreParams}
+import freechips.rocketchip.util.AsyncResetReg
+import boom.common.BoomTilesKey
 import testchipip._
-
-import hwacha.{Hwacha}
-
+import hwacha.Hwacha
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.uart._
-
-import chipyard.{BuildTop}
+import chipyard.BuildTop
 
 /**
  * TODO: Why do we need this?
@@ -37,19 +31,32 @@ import ConfigValName._
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
+    address = 0x70000000,
     contentFileName = s"./bootrom/bootrom.rv${site(XLen)}.img")
+})
+
+class WithGFEClint extends Config((site, here, up) => {
+  case CLINTKey => Some(CLINTParams(0x10000000))
+})
+
+class WithGFEMem extends Config((site, here, up) => {
+  case ExtMem => Some(MemoryPortParams(MasterPortParams(
+    base = 0x80000000L,
+    size = 0x80000000L,
+    beatBytes = site(MemoryBusKey).beatBytes,
+    idBits = 4), 1))
 })
 
 // DOC include start: gpio config fragment
 class WithGPIO extends Config((site, here, up) => {
   case PeripheryGPIOKey => Seq(
-    GPIOParams(address = 0x10012000, width = 4, includeIOF = false))
+    GPIOParams(address = 0x62330000, width = 4, includeIOF = false))
 })
 // DOC include end: gpio config fragment
 
 class WithUART extends Config((site, here, up) => {
   case PeripheryUARTKey => Seq(
-    UARTParams(address = 0x54000000L, nTxEntries = 256, nRxEntries = 256))
+    UARTParams(address = 0x62300000L, nTxEntries = 256, nRxEntries = 256))
 })
 
 class WithNoGPIO extends Config((site, here, up) => {
