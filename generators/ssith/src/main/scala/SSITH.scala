@@ -18,6 +18,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.devices.debug.DebugModuleKey
 
 case object SSITHCrossingKey extends Field[Seq[RocketCrossingParams]](List(RocketCrossingParams()))
 
@@ -79,6 +80,12 @@ class WithSSITHMemPort extends Config((site, here, up) => {
     size = x"8000_0000",
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
+})
+
+class WithIntegratedPlicClintDebug extends Config((site, here, up) => {
+  case PLICKey => None
+  case CLINTKey => None
+  case DebugModuleKey => None
 })
 
 class WithSSITHBootROM extends Config((site, here, up) => {
@@ -162,6 +169,76 @@ class SSITHTile(
   val slaveNode = TLIdentityNode()
   val masterNode = visibilityNode
 
+  val plicDevice: SimpleDevice = new SimpleDevice("interrupt-controller", Seq("riscv,plic0")) {
+    override val alwaysExtended = true
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
+      val base_address = address.head.base
+      val control_map = AddressSet.misaligned(base_address, 0x1000)
+      val extra = Map(
+        "reg-names" -> Seq(ResourceString("control")),
+        "reg" -> Seq(ResourceAddress(control_map, perms)),
+        "interrupt-controller" -> Nil,
+        "riscv,ndev" -> Seq(ResourceInt(16)),
+        "riscv,max-priority" -> Seq(ResourceInt(127)),
+        "#interrupt-cells" -> Seq(ResourceInt(1)))
+      Description(name, mapping ++ extra)
+    }
+  }
+
+  val clintDevice: SimpleDevice = new SimpleDevice("clint", Seq("riscv,clint0")) {
+    override val alwaysExtended = true
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
+      val base_address = address.head.base
+      val control_map = AddressSet.misaligned(base_address, 0x10000)
+      val extra = Map(
+        "reg-names" -> Seq(ResourceString("control")),
+        "reg" -> Seq(ResourceAddress(control_map, perms)),
+      )
+      Description(name, mapping ++ extra)
+    }
+  }
+
+  val debugDevice = new SimpleDevice("debug-controller", Seq("sifive,debug-013","riscv,debug-013")){
+    override val alwaysExtended = true
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
+      val base_address = address.head.base
+      val control_map = AddressSet.misaligned(base_address, 0x1000)
+      val extra = Map(
+        "reg-names" -> Seq(ResourceString("control")),
+        "reg" -> Seq(ResourceAddress(control_map, perms)),
+      )
+      Description(name, mapping ++ extra)
+    }
+  }
+
+  val clintIntNode : IntNexusNode = IntNexusNode(
+    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(2, Seq(Resource(clintDevice, "int"))))) },
+    sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
+    outputRequiresInput = false)
+
+  val debugIntNode : IntNexusNode = IntNexusNode(
+    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1, Seq(Resource(debugDevice, "int"))))) },
+    sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
+    outputRequiresInput = false)
+
+  val plicNode = IntNexusNode(
+  sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1, Seq(Resource(plicDevice, "int"))))) },
+  sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
+  outputRequiresInput = false,
+  inputRequiresOutput = false)
+
+  // This is order dependent! Must be debug -> clint -> plic
+  intInwardNode := debugIntNode
+  intInwardNode := clintIntNode // Connects both interrupts in one node connection
+  intInwardNode := plicNode
+  intInwardNode := plicNode
+
   tlOtherMastersNode := tlMasterXbar.node
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
@@ -179,6 +256,23 @@ class SSITHTile(
 
   ResourceBinding {
     Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
+    Resource(plicDevice, "reg").bind(ResourceAddress(0xc000000))
+    Resource(clintDevice, "reg").bind(ResourceAddress(0x2000000))
+    Resource(debugDevice, "reg").bind(ResourceAddress(0))
+  }
+
+  // Assign all the devices unique ranges
+  lazy val sources = plicNode.edges.in.map(_.source)
+  lazy val flatSources = (sources zip sources.map(_.num).scanLeft(0)(_+_).init).map {
+    case (s, o) => s.sources.map(z => z.copy(range = z.range.offset(o)))
+  }.flatten
+
+  def nDevices: Int = plicNode.edges.in.map(_.source.num).sum
+  ResourceBinding {
+    flatSources.foreach { s => s.resources.foreach { r =>
+      // +1 because interrupt 0 is reserved
+      (s.range.start until s.range.end).foreach { i => r.bind(plicDevice, ResourceInt(i+1)) }
+    } }
   }
 
   override def makeMasterBoundaryBuffers(implicit p: Parameters) = {
@@ -266,7 +360,7 @@ class SSITHTile(
     := mmioAXI4Node)
 
   def getSSITHInterrupts() = {
-    val (interrupts, _) = intSinkNode.in(0)
+    val interrupts = plicNode.in.map { case (i, e) => i.take(e.source.num) }.flatten.asUInt()
     interrupts
   }
 }
@@ -284,10 +378,18 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
     axiIdWidth = outer.idBits
   ))
 
+  println(s"Interrupt map (${1} harts ${outer.nDevices} interrupts):")
+  outer.flatSources.foreach { s =>
+    // +1 because 0 is reserved, +1-1 because the range is half-open
+    println(s"  [${s.range.start+1}, ${s.range.end}] => ${s.name}")
+  }
+  println("")
+
   core.CLK := clock
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
-  core.cpu_external_interrupt_req := Cat(0.U(11.W), outer.getSSITHInterrupts().asUInt())
+//  core.cpu_external_interrupt_req := Cat(0.U(11.W), outer.getSSITHInterrupts().asUInt())
+  core.cpu_external_interrupt_req := outer.getSSITHInterrupts()
 
   if (outer.SSITHParams.trace) {
     require(false, "Not currently implemented!")
@@ -424,3 +526,46 @@ class SSITHCoreBlackbox(  axiAddrWidth: Int,
   }
   chisel3.experimental.annotate(anno)
 }
+//
+//// Need to rewrite this trait from rocket-chip to avoid issues with ordering the interrupt connections
+//trait SinksSSITHInterrupts { this: BaseTile =>
+//
+//  val intInwardNode = intXbar.intnode :=* IntIdentityNode()(ValName("int_local"))
+//  protected val intSinkNode = IntSinkNode(IntSinkPortSimple())
+//  intSinkNode := intXbar.intnode
+//
+//  def cpuDevice: Device
+//  val intcDevice = new DeviceSnippet {
+//    override def parent = Some(cpuDevice)
+//    def describe(): Description = {
+//      Description("interrupt-controller", Map(
+//        "compatible"           -> "riscv,cpu-intc".asProperty,
+//        "interrupt-controller" -> Nil,
+//        "#interrupt-cells"     -> 1.asProperty))
+//    }
+//  }
+//
+//  ResourceBinding {
+//    intSinkNode.edges.in.flatMap(_.source.sources).map { case s =>
+//      for (i <- s.range.start until s.range.end) {
+//        println(s"Interrupt i = ${i}")
+//        csrIntMap.lift(i).foreach { j =>
+//          println(s"Interrupt i = ${i} -> j = ${j}")
+//          s.resources.foreach { r =>
+//            r.bind(intcDevice, ResourceInt(j))
+//          }
+//        }
+//      }
+//    }
+//  }
+//
+//  // TODO: the order of the following two functions must match, and
+//  //         also match the order which things are connected to the
+//  //         per-tile crossbar in subsystem.HasTiles.connectInterrupts
+//
+//  // debug, msip, mtip, meip, seip, lip offsets in CSRs
+//  def csrIntMap: List[Int] = {
+//    val seip = if (usingVM) Seq(9) else Nil
+//    List(3, 7, 11) ++ seip ++ List(65535)
+//  }
+//}

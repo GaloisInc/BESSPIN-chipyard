@@ -68,6 +68,7 @@ trait HasChipyardTiles extends HasTiles
         }
         case s: SSITHTileParams => {
           val t = LazyModule(new SSITHTile(s, crossing, PriorityMuxHartIdFromSeq(ssithTileParams), logicalTreeNode))
+          t.plicNode :=* ibus.toPLIC
           (t, t.rocketLogicalTree)
         }
       }
@@ -90,7 +91,31 @@ trait HasChipyardTiles extends HasTiles
   }.toList
 }
 
-trait HasChipyardTilesModuleImp extends HasTilesModuleImp
+// Have to recreate the Rocket HasTileModuleImp here to avoid creating the unnecessary meipNode
+trait HasSSITHTilesModuleImp extends LazyModuleImp {
+  val outer: HasTiles
+
+  def resetVectorBits: Int = {
+    // Consider using the minimum over all widths, rather than enforcing homogeneity
+    val vectors = outer.tiles.map(_.module.constants.reset_vector)
+    require(vectors.tail.forall(_.getWidth == vectors.head.getWidth))
+    vectors.head.getWidth
+  }
+
+  val tile_inputs = outer.tiles.map(_.module.constants)
+
+  val meip = if(outer.meipNode.isDefined && p(SSITHTilesKey).isEmpty) {
+    Some(IO(Input(Vec(outer.meipNode.get.out.size, Bool()))))
+  } else None
+
+  meip.foreach { m =>
+    m.zipWithIndex.foreach{ case (pin, i) =>
+      (outer.meipNode.get.out(i)._1)(0) := pin
+    }
+  }
+}
+
+trait HasChipyardTilesModuleImp extends HasSSITHTilesModuleImp
   with HasPeripheryDebugModuleImp
 {
   val outer: HasChipyardTiles

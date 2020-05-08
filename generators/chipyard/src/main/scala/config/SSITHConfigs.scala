@@ -13,6 +13,7 @@ class SSITHConfig extends Config(
     new chipyard.config.WithUART ++                                // add a UART
     new ssith.WithSSITHMemPort ++                                  // Change location of main memory
     new ssith.WithSSITHBootROM ++                                  // Use the SSITH Bootrom to workaround incompatibility issues
+    new ssith.WithIntegratedPlicClintDebug ++                      // Removes duplicated PLIC, CLINT, and Debug Module, which are all inside core
     new freechips.rocketchip.subsystem.WithNoMMIOPort ++           // no top-level MMIO master port (overrides default set in rocketchip)
     new freechips.rocketchip.subsystem.WithNoSlavePort ++          // no top-level MMIO slave port (overrides default set in rocketchip)
     new freechips.rocketchip.subsystem.WithInclusiveCache ++       // use Sifive L2 cache
