@@ -1,5 +1,7 @@
 package chipyard.config
 
+import java.io.File
+
 import chisel3._
 import chisel3.util.log2Up
 import freechips.rocketchip.config.{Config, Field, Parameters}
@@ -31,8 +33,20 @@ import ConfigValName._
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
-    address = 0x70000000,
     contentFileName = s"./bootrom/bootrom.rv${site(XLen)}.img")
+})
+
+class WithGFEBootROM extends Config((site, here, up) => {
+  case BootROMParams => {
+    val chipyardBootROM = new File(s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+
+    val bootROMPath = if (chipyardBootROM.exists()) {
+      chipyardBootROM.getAbsolutePath()
+    } else {
+      throw new Exception("Could not find bootrom file")
+    }
+    BootROMParams(0x70000000L, hang = 0x70000000L, contentFileName = bootROMPath)
+  }
 })
 
 class WithGFEClint extends Config((site, here, up) => {
@@ -42,7 +56,7 @@ class WithGFEClint extends Config((site, here, up) => {
 class WithGFEMem extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = 0x80000000L,
-    size = 0x80000000L,
+    size = 0x10000000L,
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
 })
