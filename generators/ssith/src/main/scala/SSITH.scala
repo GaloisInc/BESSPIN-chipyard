@@ -89,8 +89,8 @@ class WithIntegratedPlicClintDebug extends Config((site, here, up) => {
 })
 
 class WithSSITHBootROM extends Config((site, here, up) => {
-  case BootROMParams => BootROMParams(address = 0x70000000,
-    contentFileName = s"./bootrom/bootrom.ssith.rv${site(XLen)}.img")
+  case BootROMParams => BootROMParams(address = 0x70000000, hang = 0x70000000,
+    contentFileName = s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
 })
 
 case object SSITHTilesKey extends Field[Seq[SSITHTileParams]](Nil)
