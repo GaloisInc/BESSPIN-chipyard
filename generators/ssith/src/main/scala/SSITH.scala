@@ -363,6 +363,12 @@ class SSITHTile(
     val interrupts = plicNode.in.map { case (i, e) => i.take(e.source.num) }.flatten.asUInt()
     interrupts
   }
+
+  // Create memory mapped interrupt device
+  val mmint = LazyModule(new MMInt(0x2000000, 4))
+  connectTLSlave(mmint.node, 4)
+  val tsiInterruptNode = IntSinkNode(IntSinkPortSimple())
+  tsiInterruptNode := mmint.intnode
 }
 
 class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
@@ -389,7 +395,8 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
 //  core.cpu_external_interrupt_req := Cat(0.U(11.W), outer.getSSITHInterrupts().asUInt())
-  core.cpu_external_interrupt_req := outer.getSSITHInterrupts()
+  // Connect TSI interrupt from MMInt to 16
+  core.cpu_external_interrupt_req := (outer.tsiInterruptNode.in(0)._1.asUInt() << 15).asUInt() | outer.getSSITHInterrupts()
 
   if (outer.SSITHParams.trace) {
     require(false, "Not currently implemented!")

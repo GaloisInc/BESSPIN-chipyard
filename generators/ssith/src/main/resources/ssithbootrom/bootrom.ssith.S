@@ -1,23 +1,5 @@
 #define DRAM_BASE 0x80000000
 
-// boot all cores (only hart 0) and jump to main program execution
-.section .text.start, "ax", @progbits
-.globl _start
-_start:
-  li s0, 0xC200004
-  lw a2, 0(s0)
-  li a1, 0x2000000 // base address of clint
-  csrr a0, mhartid
-//  bnez a0, boot_core
-//  adi a2, a1, 4
-//  li a3, 1
-//interrupt_loop: // trigger MSIP interrupts for other harts so that they also boot
-//  sw a3, 0(a2)
-//  addi a2, a2, 4
-//  lw a3, -4(a2)
-//  bnez a3, interrupt_loop
-  j boot_core_hart0
-
 // this boot ROM doesn't know about any boot devices, so it just spins,
 // waiting for the serial interface to load the program and interrupt it
 .section .text.hang, "ax", @progbits
@@ -33,18 +15,33 @@ _hang: // reset vector
   li a1, 0xC200000
   sw zero, 0(a1)
   li a1, 0xC002000
-  li a0, 4
+  li a0, 0x10000
   sw a0, 0(a1)
   li a0, 7
   li a1, 0xC000000
-  sw a0, 8(a1)
+  sw a0, 0x58(a1)
 wfi_loop: // wait for MSIP interrupt to start program execution
   wfi
   j wfi_loop
 
-.section .text.other, "ax", @progbits
-.globl _other
-_other:
+// boot all cores (only hart 0) and jump to main program execution
+.section .text.start, "ax", @progbits
+.globl _start
+_start:
+  li s0, 0xC200004
+  lw a2, 0(s0)
+  li a1, 0x10000000 // base address of clint
+  csrr a0, mhartid
+  bnez a0, boot_core
+  addi a2, a1, 4
+  li a3, 1
+interrupt_loop: // trigger MSIP interrupts for other harts so that they also boot
+  sw a3, 0(a2)
+  addi a2, a2, 4
+  lw a3, -4(a2)
+  bnez a3, interrupt_loop
+  j boot_core_hart0
+
 // other harts must wait until MSIP of hart 0 is cleared to continue
 boot_core:
   lw t0, 0(a1)       // load hart 0 MSIP
@@ -54,6 +51,10 @@ boot_core:
 boot_core_hart0:   // begin executing code at DRAM_BASE
   sw zero, 0(a1)   // clear the interrupt
   sw a2, 0(s0)     // clear the PLIC
+  li s0, 0xC002000 // Disable the PLIC
+  li s1, 0xC000000 
+  sw zero, 0(s0)
+  sw zero, 0x58(s1)
   li a0, DRAM_BASE // program reset vector
   csrw mepc, a0    // return from interrupt to start of user program
   csrr a0, mhartid // hartid for next level bootloader

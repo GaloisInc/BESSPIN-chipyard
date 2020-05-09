@@ -6,6 +6,4 @@ SECTIONS
     .text.hang : { *(.text.hang) }
     . = ROM_BASE + 0x80;
     .text.start : { *(.text.start) }
-    . = ROM_BASE + 0x140;
-    .text.other : { *(.text.other) }
 }
