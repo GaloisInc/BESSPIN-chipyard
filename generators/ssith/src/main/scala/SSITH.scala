@@ -76,7 +76,7 @@ class WithSSITHMMIOPort extends Config((site, here, up) => {
 
 class WithSSITHMemPort extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
-    base = x"C000_0000",
+    base = x"8000_0000",
     size = x"4000_0000",
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
@@ -257,7 +257,7 @@ class SSITHTile(
   ResourceBinding {
     Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
     Resource(plicDevice, "reg").bind(ResourceAddress(0xc000000))
-    Resource(clintDevice, "reg").bind(ResourceAddress(0x2000000))
+    Resource(clintDevice, "reg").bind(ResourceAddress(0x10000000))
     Resource(debugDevice, "reg").bind(ResourceAddress(0))
   }
 
