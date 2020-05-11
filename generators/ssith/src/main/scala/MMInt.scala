@@ -5,6 +5,7 @@ import chisel3._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper.{RegField, RegFieldDesc}
+import freechips.rocketchip.tile.BaseTile
 import freechips.rocketchip.tilelink.TLRegisterNode
 
 // Very simple memory mapped module that converts a write to an interrupt. Can be used to replace
@@ -35,4 +36,12 @@ class MMInt(address: BigInt, beatBytes: Int)(implicit p: Parameters) extends Laz
 
     node.regmap(0 -> Seq(RegField(1, intReg, RegFieldDesc(s"int_0", s"Interrupt 0", reset=Some(0)))))
   }
+}
+
+trait HasMMIntDevice { this: BaseTile =>
+  // Create memory mapped interrupt device
+  val mmint = LazyModule(new MMInt(0x2000000, 4))
+  connectTLSlave(mmint.node, 4)
+  val tsiInterruptNode = IntSinkNode(IntSinkPortSimple())
+  tsiInterruptNode := mmint.intnode
 }

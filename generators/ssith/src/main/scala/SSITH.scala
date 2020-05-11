@@ -1,16 +1,9 @@
 package ssith
 
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.{ChiselAnnotation, ExtModule, IntParam, RunFirrtlTransform, StringParam}
-import firrtl.transforms.{BlackBoxResourceAnno, BlackBoxSourceHelper}
-
-import scala.collection.mutable.ListBuffer
 import freechips.rocketchip.config._
-import freechips.rocketchip.subsystem._
-import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{ICacheLogicalTreeNode, LogicalModuleTree, LogicalTreeNode, RocketLogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalTreeNode, RocketLogicalTreeNode}
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.subsystem.RocketCrossingParams
 import freechips.rocketchip.tilelink._
@@ -18,80 +11,8 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.devices.debug.DebugModuleKey
 
 case object SSITHCrossingKey extends Field[Seq[RocketCrossingParams]](List(RocketCrossingParams()))
-
-/**
-  * Enable trace port
-  */
-class WithSSITHEnableTrace extends Config((site, here, up) => {
-  case SSITHTilesKey => up(SSITHTilesKey) map (tile => tile.copy(trace = true))
-})
-
-/**
-  * Makes cacheable region include to/from host addresses.
-  * Speeds up operation... at the expense of not being able to use
-  * to/fromhost communication unless those lines are evicted from L1.
-  */
-class WithToFromHostCaching extends Config((site, here, up) => {
-  case SSITHTilesKey => up(SSITHTilesKey, site) map { a =>
-    a.copy(core = a.core.copy(
-      enableToFromHostCaching = true
-    ))
-  }
-})
-
-/**
-  * Create multiple copies of a SSITH tile (and thus a core).
-  * Override with the default mixins to control all params of the tiles.
-  *
-  * @param n amount of tiles to duplicate
-  */
-class WithNSSITHCores(n: Int) extends Config(
-  new WithNormalSSITHSys ++
-    new Config((site, here, up) => {
-      case SSITHTilesKey => {
-        List.tabulate(n)(i => SSITHTileParams(hartId = i))
-      }
-    })
-)
-
-/**
-  * Setup default SSITH parameters.
-  */
-class WithNormalSSITHSys extends Config((site, here, up) => {
-  case SystemBusKey => up(SystemBusKey, site).copy(beatBytes = 8)
-  case XLen => 64
-  case MaxHartIdBits => log2Up(site(SSITHTilesKey).size)
-})
-
-class WithSSITHMMIOPort extends Config((site, here, up) => {
-  case ExtBus => Some(MasterPortParams(
-    base = x"2000_0000",
-    size = x"6000_0000",
-    beatBytes = site(MemoryBusKey).beatBytes,
-    idBits = 4))
-})
-
-class WithSSITHMemPort extends Config((site, here, up) => {
-  case ExtMem => Some(MemoryPortParams(MasterPortParams(
-    base = x"8000_0000",
-    size = x"4000_0000",
-    beatBytes = site(MemoryBusKey).beatBytes,
-    idBits = 4), 1))
-})
-
-class WithIntegratedPlicClintDebug extends Config((site, here, up) => {
-  case PLICKey => None
-  case CLINTKey => None
-  case DebugModuleKey => None
-})
-
-class WithSSITHBootROM extends Config((site, here, up) => {
-  case BootROMParams => BootROMParams(address = 0x70000000, hang = 0x70000000,
-    contentFileName = s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
-})
 
 case object SSITHTilesKey extends Field[Seq[SSITHTileParams]](Nil)
 
@@ -157,6 +78,12 @@ class SSITHTile(
   extends BaseTile(SSITHParams, crossing, lookup, q)
     with SinksExternalInterrupts
     with SourcesExternalNotifications
+    // This is order dependent! Must be debug -> clint -> plic
+    // traits are loaded top-down
+    with HasIntegratedGFEDebug
+    with HasIntegratedGFECLINT
+    with HasIntegratedGFEPLIC
+    with HasMMIntDevice
 {
   /**
     * Setup parameters:
@@ -168,76 +95,6 @@ class SSITHTile(
   val intOutwardNode = IntIdentityNode()
   val slaveNode = TLIdentityNode()
   val masterNode = visibilityNode
-
-  val plicDevice: SimpleDevice = new SimpleDevice("interrupt-controller", Seq("riscv,plic0")) {
-    override val alwaysExtended = true
-    override def describe(resources: ResourceBindings): Description = {
-      val Description(name, mapping) = super.describe(resources)
-      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
-      val base_address = address.head.base
-      val control_map = AddressSet.misaligned(base_address, 0x400000)
-      val extra = Map(
-        "reg-names" -> Seq(ResourceString("control")),
-        "reg" -> Seq(ResourceAddress(control_map, perms)),
-        "interrupt-controller" -> Nil,
-        "riscv,ndev" -> Seq(ResourceInt(16)),
-        "riscv,max-priority" -> Seq(ResourceInt(7)),
-        "#interrupt-cells" -> Seq(ResourceInt(1)))
-      Description(name, mapping ++ extra)
-    }
-  }
-
-  val clintDevice: SimpleDevice = new SimpleDevice("clint", Seq("riscv,clint0")) {
-    override val alwaysExtended = true
-    override def describe(resources: ResourceBindings): Description = {
-      val Description(name, mapping) = super.describe(resources)
-      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
-      val base_address = address.head.base
-      val control_map = AddressSet.misaligned(base_address, 0x10000)
-      val extra = Map(
-        "reg-names" -> Seq(ResourceString("control")),
-        "reg" -> Seq(ResourceAddress(control_map, perms)),
-      )
-      Description(name, mapping ++ extra)
-    }
-  }
-
-  val debugDevice = new SimpleDevice("debug-controller", Seq("sifive,debug-013","riscv,debug-013")){
-    override val alwaysExtended = true
-    override def describe(resources: ResourceBindings): Description = {
-      val Description(name, mapping) = super.describe(resources)
-      val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
-      val base_address = address.head.base
-      val control_map = AddressSet.misaligned(base_address, 0x1000)
-      val extra = Map(
-        "reg-names" -> Seq(ResourceString("control")),
-        "reg" -> Seq(ResourceAddress(control_map, perms)),
-      )
-      Description(name, mapping ++ extra)
-    }
-  }
-
-  val clintIntNode : IntNexusNode = IntNexusNode(
-    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(2, Seq(Resource(clintDevice, "int"))))) },
-    sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
-    outputRequiresInput = false)
-
-  val debugIntNode : IntNexusNode = IntNexusNode(
-    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1, Seq(Resource(debugDevice, "int"))))) },
-    sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
-    outputRequiresInput = false)
-
-  val plicNode = IntNexusNode(
-  sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1, Seq(Resource(plicDevice, "int"))))) },
-  sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
-  outputRequiresInput = false,
-  inputRequiresOutput = false)
-
-  // This is order dependent! Must be debug -> clint -> plic
-  intInwardNode := debugIntNode
-  intInwardNode := clintIntNode // Connects both interrupts in one node connection
-  intInwardNode := plicNode
-  intInwardNode := plicNode
 
   tlOtherMastersNode := tlMasterXbar.node
   masterNode :=* tlOtherMastersNode
@@ -256,23 +113,6 @@ class SSITHTile(
 
   ResourceBinding {
     Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
-    Resource(plicDevice, "reg").bind(ResourceAddress(0xc000000))
-    Resource(clintDevice, "reg").bind(ResourceAddress(0x10000000))
-    Resource(debugDevice, "reg").bind(ResourceAddress(0))
-  }
-
-  // Assign all the devices unique ranges
-  lazy val sources = plicNode.edges.in.map(_.source)
-  lazy val flatSources = (sources zip sources.map(_.num).scanLeft(0)(_+_).init).map {
-    case (s, o) => s.sources.map(z => z.copy(range = z.range.offset(o)))
-  }.flatten
-
-  def nDevices: Int = plicNode.edges.in.map(_.source.num).sum
-  ResourceBinding {
-    flatSources.foreach { s => s.resources.foreach { r =>
-      // +1 because interrupt 0 is reserved
-      (s.range.start until s.range.end).foreach { i => r.bind(plicDevice, ResourceInt(i+1)) }
-    } }
   }
 
   override def makeMasterBoundaryBuffers(implicit p: Parameters) = {
@@ -358,20 +198,10 @@ class SSITHTile(
     := AXI4UserYanker(Some(2)) // remove user field on AXI interface. need but in reality user intf. not needed
     := AXI4Fragmenter() // deal with multi-beat xacts
     := mmioAXI4Node)
-
-  def getSSITHInterrupts() = {
-    val interrupts = plicNode.in.map { case (i, e) => i.take(e.source.num) }.flatten.asUInt()
-    interrupts
-  }
-
-  // Create memory mapped interrupt device
-  val mmint = LazyModule(new MMInt(0x2000000, 4))
-  connectTLSlave(mmint.node, 4)
-  val tsiInterruptNode = IntSinkNode(IntSinkPortSimple())
-  tsiInterruptNode := mmint.intnode
 }
 
-class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
+class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
+  with HasIntegratedGFEPLICModuleImp {
   // annotate the parameters
   Annotated.params(this, outer.SSITHParams)
 
@@ -384,17 +214,10 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer){
     axiIdWidth = outer.idBits
   ))
 
-  println(s"Interrupt map (${1} harts ${outer.nDevices} interrupts):")
-  outer.flatSources.foreach { s =>
-    // +1 because 0 is reserved, +1-1 because the range is half-open
-    println(s"  [${s.range.start+1}, ${s.range.end}] => ${s.name}")
-  }
-  println("")
-
   core.CLK := clock
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
-//  core.cpu_external_interrupt_req := Cat(0.U(11.W), outer.getSSITHInterrupts().asUInt())
+
   // Connect TSI interrupt from MMInt to 16
   core.cpu_external_interrupt_req := (outer.tsiInterruptNode.in(0)._1.asUInt() << 15).asUInt() | outer.getSSITHInterrupts()
 
@@ -493,86 +316,3 @@ class SSITHAXI4Bundle(params: AXI4BundleParameters) extends GenericParameterized
   val rlast    = Input(Bool())
   val rready   = Output(Bool())
 }
-
-class SSITHCoreBlackbox(  axiAddrWidth: Int,
-                          axiDataWidth: Int,
-                          axiUserWidth: Int,
-                          axiIdWidth: Int)
-  extends ExtModule()
-{
-  val CLK = IO(Input(Clock()))
-  val RST_N = IO(Input(Bool()))
-  val master0 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(axiAddrWidth, axiDataWidth, axiIdWidth, axiUserWidth, false)))
-  val master1 = IO(new SSITHAXI4Bundle(AXI4BundleParameters(axiAddrWidth, axiDataWidth, axiIdWidth, axiUserWidth, false)))
-  val cpu_external_interrupt_req = IO(Input(UInt(16.W)))
-  val tv_verifier_info_tx_tvalid = IO(Output(Bool()))
-  val tv_verifier_info_tx_tdata = IO(Output(UInt(608.W)))
-  val tv_verifier_info_tx_tstrb = IO(Output(UInt(76.W)))
-  val tv_verifier_info_tx_tkeep = IO(Output(UInt(76.W)))
-  val tv_verifier_info_tx_tlast = IO(Output(Bool()))
-  val tv_verifier_info_tx_tready = IO(Input(Bool()))
-  val jtag_tdi = IO(Input(Bool()))
-  val jtag_tms = IO(Input(Bool()))
-  val jtag_tclk = IO(Input(Bool()))
-  val jtag_tdo = IO(Output(Bool()))
-  val CLK_jtag_tclk_out = IO(Output(Bool()))
-  val CLK_GATE_jtag_tclk_out = IO(Output(Bool()))
-//  require((exeRegCnt <= execRegAvail) && (exeRegBase.length <= execRegAvail) && (exeRegSz.length <= execRegAvail), s"Currently only supports $execRegAvail execution regions")
-//  require((cacheRegCnt <= cacheRegAvail) && (cacheRegBase.length <= cacheRegAvail) && (cacheRegSz.length <= cacheRegAvail), s"Currently only supports $cacheRegAvail cacheable regions")
-//
-//  // pre-process the verilog to remove "includes" and combine into one file
-//  val make = "make -C generators/SSITH/src/main/resources/vsrc default "
-//  val proc = if (traceportEnabled) make + "EXTRA_PREPROC_OPTS=+define+FIRESIM_TRACE" else make
-//  require (proc.! == 0, "Failed to run preprocessing step")
-
-  // add wrapper/blackbox after it is pre-processed
-  // addResource("/vsrc/SSITHP2Core.v")
-  val anno = new ChiselAnnotation with RunFirrtlTransform {
-    def toFirrtl = BlackBoxResourceAnno(toNamed, "/vsrc/SSITHCore.v")
-    def transformClass = classOf[BlackBoxSourceHelper]
-  }
-  chisel3.experimental.annotate(anno)
-}
-//
-//// Need to rewrite this trait from rocket-chip to avoid issues with ordering the interrupt connections
-//trait SinksSSITHInterrupts { this: BaseTile =>
-//
-//  val intInwardNode = intXbar.intnode :=* IntIdentityNode()(ValName("int_local"))
-//  protected val intSinkNode = IntSinkNode(IntSinkPortSimple())
-//  intSinkNode := intXbar.intnode
-//
-//  def cpuDevice: Device
-//  val intcDevice = new DeviceSnippet {
-//    override def parent = Some(cpuDevice)
-//    def describe(): Description = {
-//      Description("interrupt-controller", Map(
-//        "compatible"           -> "riscv,cpu-intc".asProperty,
-//        "interrupt-controller" -> Nil,
-//        "#interrupt-cells"     -> 1.asProperty))
-//    }
-//  }
-//
-//  ResourceBinding {
-//    intSinkNode.edges.in.flatMap(_.source.sources).map { case s =>
-//      for (i <- s.range.start until s.range.end) {
-//        println(s"Interrupt i = ${i}")
-//        csrIntMap.lift(i).foreach { j =>
-//          println(s"Interrupt i = ${i} -> j = ${j}")
-//          s.resources.foreach { r =>
-//            r.bind(intcDevice, ResourceInt(j))
-//          }
-//        }
-//      }
-//    }
-//  }
-//
-//  // TODO: the order of the following two functions must match, and
-//  //         also match the order which things are connected to the
-//  //         per-tile crossbar in subsystem.HasTiles.connectInterrupts
-//
-//  // debug, msip, mtip, meip, seip, lip offsets in CSRs
-//  def csrIntMap: List[Int] = {
-//    val seip = if (usingVM) Seq(9) else Nil
-//    List(3, 7, 11) ++ seip ++ List(65535)
-//  }
-//}

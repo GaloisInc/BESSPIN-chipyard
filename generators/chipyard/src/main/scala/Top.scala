@@ -15,11 +15,11 @@ import freechips.rocketchip.devices.tilelink._
 class Top(implicit p: Parameters) extends System
   with testchipip.CanHaveTraceIO // Enables optionally adding trace IO
   with testchipip.CanHaveBackingScratchpad // Enables optionally adding a backing scratchpad
-  with testchipip.CanHavePeripheryBlockDevice // Enables optionally adding the block device
+  with chipyard.CanHavePeripheryBlockDeviceSSITH // Enables optionally adding the block device, SSITH-edition to fix address
   with testchipip.CanHavePeripherySerial // Enables optionally adding the TSI serial-adapter and port
   with sifive.blocks.devices.uart.HasPeripheryUART // Enables optionally adding the sifive UART
   with sifive.blocks.devices.gpio.HasPeripheryGPIO // Enables optionally adding the sifive GPIOs
-  with icenet.CanHavePeripheryIceNIC // Enables optionally adding the IceNIC for FireSim
+  with chipyard.CanHavePeripheryIceNICSSITH // Enables optionally adding the IceNIC for FireSim, SSITH-edition to fix address
   with chipyard.example.CanHavePeripheryInitZero // Enables optionally adding the initzero example widget
   with chipyard.example.CanHavePeripheryGCD // Enables optionally adding the GCD example widget
 {

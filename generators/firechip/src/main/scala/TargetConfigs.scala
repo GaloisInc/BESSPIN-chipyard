@@ -98,11 +98,21 @@ class WithTraceIO extends Config((site, here, up) => {
 
 // Tweaks that are generally applied to all firesim configs
 class WithFireSimConfigTweaks extends Config(
+  new WithBootROM ++ // needed to support FireSim-as-top
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
+  new WithoutClockGating ++
+  new WithTraceIO ++
+  new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 16L) ++ // 16 GB
+  new testchipip.WithTSI ++
+  new testchipip.WithBlockDevice ++
+  new chipyard.config.WithUART
+)
+
+// A slightly tweaked version for SSITH Blackbox builds
+class WithFireSimConfigSSITHTweaks extends Config(
   new WithGFEBootROM ++ // needed to support FireSim-as-top
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
   new WithoutClockGating ++
-//  new WithTraceIO ++
-//  new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 16L) ++ // 16 GB
   new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 4GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
@@ -197,6 +207,6 @@ class FireSimArianeConfig extends Config(
 //*********************************************************************************/
 class FireSimSSITHConfig extends Config(
   new WithDefaultFireSimBridges ++
-    new WithDefaultMemModel ++
-    new WithFireSimConfigTweaks ++
-    new chipyard.SSITHConfig)
+  new WithDefaultMemModel ++
+  new WithFireSimConfigSSITHTweaks ++
+  new chipyard.SSITHConfig)
