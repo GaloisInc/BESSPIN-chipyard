@@ -1,10 +1,13 @@
 package chipyard
 
+import chisel3._
+import chisel3.util.Pipe
 import freechips.rocketchip.config.Config
-import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.subsystem.BaseSubsystem
-import icenet.{CanHavePeripheryIceNIC, IceNIC, NICKey}
-import testchipip.{BlockDeviceController, BlockDeviceKey, CanHavePeripheryBlockDevice}
+import freechips.rocketchip.util.PlusArg
+import icenet._
+import testchipip.{BlockDeviceController, BlockDeviceIO, BlockDeviceKey, BlockDeviceModel, SimBlockDevice}
 import ssith.SSITHTilesKey
 
 class SSITHConfig extends Config(
@@ -27,11 +30,11 @@ class SSITHConfig extends Config(
     new freechips.rocketchip.system.BaseConfig)                    // "base" rocketchip system
 
 // There's no good way to change the block or net device address, so override the traits here
-trait CanHavePeripheryBlockDeviceSSITH extends CanHavePeripheryBlockDevice { this: BaseSubsystem =>
+trait CanHavePeripheryBlockDeviceSSITH { this: BaseSubsystem =>
     private val address = if (p(SSITHTilesKey).nonEmpty) 0x40015000 else 0x10015000
     private val portName = "blkdev-controller"
 
-    override val controller = p(BlockDeviceKey).map { _ =>
+    val controller = p(BlockDeviceKey).map { _ =>
         val c = LazyModule(new BlockDeviceController(
             address, pbus.beatBytes))
 
@@ -42,15 +45,83 @@ trait CanHavePeripheryBlockDeviceSSITH extends CanHavePeripheryBlockDevice { thi
     }
 }
 
-trait CanHavePeripheryIceNICSSITH extends CanHavePeripheryIceNIC { this: BaseSubsystem =>
+trait CanHavePeripheryBlockDeviceSSITHModuleImp extends LazyModuleImp {
+    val outer: CanHavePeripheryBlockDeviceSSITH
+
+    val bdev = p(BlockDeviceKey).map { _ =>
+        val io = IO(new BlockDeviceIO)
+        io <> outer.controller.get.module.io.bdev
+        io
+    }
+
+    def connectSimBlockDevice(clock: Clock, reset: Bool) {
+        val sim = Module(new SimBlockDevice)
+        sim.io.clock := clock
+        sim.io.reset := reset
+        sim.io.bdev <> bdev.get
+    }
+
+    def connectBlockDeviceModel() {
+        val model = Module(new BlockDeviceModel(16))
+        model.io <> bdev.get
+    }
+}
+
+trait CanHavePeripheryIceNICSSITH { this: BaseSubsystem =>
     private val address = if (p(SSITHTilesKey).nonEmpty) BigInt(0x62100000) else BigInt(0x10016000)
     private val portName = "Ice-NIC"
 
-    override val icenicOpt = p(NICKey).map { params =>
+    val icenicOpt = p(NICKey).map { params =>
         val icenic = LazyModule(new IceNIC(address, pbus.beatBytes))
         pbus.toVariableWidthSlave(Some(portName)) { icenic.mmionode }
         fbus.fromPort(Some(portName))() :=* icenic.dmanode
         ibus.fromSync := icenic.intnode
         icenic
+    }
+}
+
+trait CanHavePeripheryIceNICSSITHModuleImp extends LazyModuleImp {
+    val outer: CanHavePeripheryIceNICSSITH
+
+    val net = outer.icenicOpt.map { icenic =>
+        val nicio = IO(new NICIOvonly)
+        nicio <> NICIOvonly(icenic.module.io.ext)
+        nicio
+    }
+
+    import PauseConsts.BT_PER_QUANTA
+
+    val nicConf = p(NICKey).getOrElse(NICConfig())
+    private val packetWords = nicConf.packetMaxBytes / IceNetConsts.NET_IF_BYTES
+    private val packetQuanta = (nicConf.packetMaxBytes * 8) / BT_PER_QUANTA
+
+    def connectNicLoopback(qDepth: Int = 4 * packetWords, latency: Int = 10) {
+        val netio = net.get
+        netio.macAddr := PlusArg("macaddr")
+        netio.rlimit.inc := PlusArg("rlimit-inc", 1)
+        netio.rlimit.period := PlusArg("rlimit-period", 1)
+        netio.rlimit.size := PlusArg("rlimit-size", 8)
+        netio.pauser.threshold := PlusArg("pauser-threshold", 2 * packetWords + latency)
+        netio.pauser.quanta := PlusArg("pauser-quanta", 2 * packetQuanta)
+        netio.pauser.refresh := PlusArg("pauser-refresh", packetWords)
+
+        if (nicConf.usePauser) {
+            val pauser = Module(new PauserComplex(qDepth))
+            pauser.io.ext.flipConnect(NetDelay(NICIO(netio), latency))
+            pauser.io.int.out <> pauser.io.int.in
+            pauser.io.macAddr := netio.macAddr + (1 << 40).U
+            pauser.io.settings := netio.pauser
+        } else {
+
+            netio.in := Pipe(netio.out, latency)
+        }
+        netio.in.bits.keep := IceNetConsts.NET_FULL_KEEP
+    }
+
+    def connectSimNetwork(clock: Clock, reset: Bool) {
+        val sim = Module(new SimNetwork)
+        sim.io.clock := clock
+        sim.io.reset := reset
+        sim.io.net <> net.get
     }
 }

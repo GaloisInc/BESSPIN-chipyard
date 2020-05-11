@@ -28,11 +28,11 @@ class Top(implicit p: Parameters) extends System
 
 class TopModule[+L <: Top](l: L) extends SystemModule(l)
   with testchipip.CanHaveTraceIOModuleImp
-  with testchipip.CanHavePeripheryBlockDeviceModuleImp
+  with chipyard.CanHavePeripheryBlockDeviceSSITHModuleImp
   with testchipip.CanHavePeripherySerialModuleImp
   with sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
   with sifive.blocks.devices.gpio.HasPeripheryGPIOModuleImp
-  with icenet.CanHavePeripheryIceNICModuleImp
+  with chipyard.CanHavePeripheryIceNICSSITHModuleImp
   with chipyard.example.CanHavePeripheryGCDModuleImp
   with freechips.rocketchip.util.DontTouch
 // DOC include end: Top
