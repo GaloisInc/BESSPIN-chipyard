@@ -101,8 +101,9 @@ class WithFireSimConfigTweaks extends Config(
   new WithGFEBootROM ++ // needed to support FireSim-as-top
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
   new WithoutClockGating ++
- // new WithTraceIO ++
-  new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 16L) ++ // 16 GB
+//  new WithTraceIO ++
+//  new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 16L) ++ // 16 GB
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 4GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART

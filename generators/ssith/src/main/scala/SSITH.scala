@@ -175,13 +175,13 @@ class SSITHTile(
       val Description(name, mapping) = super.describe(resources)
       val Seq(Binding(_, ResourceAddress(address, perms))) = resources("reg")
       val base_address = address.head.base
-      val control_map = AddressSet.misaligned(base_address, 0x1000)
+      val control_map = AddressSet.misaligned(base_address, 0x400000)
       val extra = Map(
         "reg-names" -> Seq(ResourceString("control")),
         "reg" -> Seq(ResourceAddress(control_map, perms)),
         "interrupt-controller" -> Nil,
         "riscv,ndev" -> Seq(ResourceInt(16)),
-        "riscv,max-priority" -> Seq(ResourceInt(127)),
+        "riscv,max-priority" -> Seq(ResourceInt(7)),
         "#interrupt-cells" -> Seq(ResourceInt(1)))
       Description(name, mapping ++ extra)
     }

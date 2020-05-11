@@ -1,4 +1,4 @@
-#define DRAM_BASE 0x80000000
+#define DRAM_BASE 0xC0000000
 
 // this boot ROM doesn't know about any boot devices, so it just spins,
 // waiting for the serial interface to load the program and interrupt it
