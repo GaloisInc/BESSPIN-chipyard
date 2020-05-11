@@ -100,7 +100,7 @@ class SSITHTile(
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
-  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("galois,SSITH", "riscv")) {
+  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("galois,SSITH-bluespec_p2", "riscv")) {
     override def parent = Some(ResourceAnchors.cpus)
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
