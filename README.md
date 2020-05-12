@@ -1,66 +1,88 @@
-![CHIPYARD](https://github.com/ucb-bar/chipyard/raw/master/docs/_static/images/chipyard-logo-full.png)
 
-# Chipyard Framework [![CircleCI](https://circleci.com/gh/ucb-bar/chipyard/tree/master.svg?style=svg)](https://circleci.com/gh/ucb-bar/chipyard/tree/master)
+# Chipyard - LMCO Example Build
 
-## Using Chipyard
+This branch is an example of building LMCO's pipeline into a modern chipyard/rocket-chip, 
+which is both FireSim and (mostly) existing GFE compatible. More on GFE compatibility below.
 
-To get started using Chipyard, see the documentation on the Chipyard documentation site: https://chipyard.readthedocs.io/
+# TA1-LMCO Repo
 
-## What is Chipyard
+The `ta1-lmco` repo has been updated on the [chipyard-compat](https://gitlab-ext.galois.com/ssith/ta1-lmco/-/tree/chipyard-compat) 
+branch to be used directly as a chipyard "generator". This only required a few minor modifications. First, the chipyard `build.sbt` 
+file has been updated to include `ta1lmco` as a package. This package is then added to the dependency list for rocketchip. All files in
+`ta1-lmco/modSmoke/src/main/scala` are included automatically without having to copy them into the rocket-chip folder.
 
-Chipyard is an open source framework for agile development of Chisel-based systems-on-chip.
-It will allow you to leverage the Chisel HDL, Rocket Chip SoC generator, and other [Berkeley][berkeley] projects to produce a [RISC-V][riscv] SoC with everything from MMIO-mapped peripherals to custom accelerators.
-Chipyard contains processor cores ([Rocket][rocket-chip], [BOOM][boom], [Ariane][ariane]), accelerators ([Hwacha][hwacha]), memory systems, and additional peripherals and tooling to help create a full featured SoC.
-Chipyard supports multiple concurrent flows of agile hardware development, including software RTL simulation, FPGA-accelerated simulation ([FireSim][firesim]), automated VLSI flows ([Hammer][hammer]), and software workload generation for bare-metal and Linux-based systems ([FireMarshal][firemarshal]).
-Chipyard is actively developed in the [Berkeley Architecture Research Group][ucb-bar] in the [Electrical Engineering and Computer Sciences Department][eecs] at the [University of California, Berkeley][berkeley].
+The second modification still requires direct manipulation of the Rocket files. Rather than maintaining a full copy of them, the 
+modifications are now applied using a patch file ([see here](https://gitlab-ext.galois.com/ssith/ta1-lmco/-/blob/9d051999e1512114de4bb9bb03fcc3c44b5408d8/pipeline_interrupt/resourcesGFE/rocket-chip-4f0cdea85.patch)). There are patches for both this version of rocket-chip as well as the GFE version. Presumably this patch should be applicable
+to _many_ future versions of Rocket, so only the git short hash in the filename would need to be updated to support a new Rocket.
 
-## Resources
+Finally, the Makefile was updated to reflect these differences. You may need to make other modifications to satisfy your actual build environment.
 
-* Chipyard Documentation: https://chipyard.readthedocs.io/
-* Chipyard Basics slides: https://fires.im/micro19-slides-pdf/02_chipyard_basics.pdf
-* Chipyard Tutorial Exercise slides: https://fires.im/micro19-slides-pdf/03_building_custom_socs.pdf
+## Side Note
 
-## Need help?
+There was an issue with using the normal Verilator simulation flow with the smoke test as-is. Chisel randomizes uninitialized registers by default, so with some
+high probability, the added pipeline stall control registers were being assigned `1'b1` on startup and causing unrecoverable stalls. I updated two registers
+to be initialized to zero on reset.
 
-* Join the Chipyard Mailing List: https://groups.google.com/forum/#!forum/chipyard
-* If you find a bug, post an issue on this repo
+# Rocket
 
-## Contributing
+The rocket-chip repo is now a completely unaltered version, commit `4f0cdea85c8a2b849fd582ccc8497892001d06b0`. This is the same commit referenced by
+FireSim v1.9.0.
 
-* See [CONTRIBUTING.md](/CONTRIBUTING.md)
+## Incompatibilities with GFE Rocket
 
-## Chipyard-related Publications
+There are two current known incompatibilities with the existing GFE Rocket:
+* Two new debug signals have been introduced at the top level: `debug_systemjtag_part_number` and `debug_systemjtag_version`. 
+* The Debug Module IR length and register addresses are back at the original locations, so the Xilinx JTAG connection will not work.
 
-These publications cover many of the internal components used in Chipyard. However, for the most up-to-date details, users should refer to the Chipyard docs.
+I have tried to align these to the GFE, but have not been able to without making modifications directly to the rocket-chip repo. This will be done if necessary.
 
-* **Generators**
-    * **Rocket Chip**: K. Asanovic, et al., *UCB EECS TR*. [PDF](http://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-17.pdf).
-    * **BOOM**: C. Celio, et al., *Hot Chips 30*. [PDF](https://www.hotchips.org/hc30/1conf/1.03_Berkeley_BROOM_HC30.Berkeley.Celio.v02.pdf).
-    * **Hwacha**: Y. Lee, et al., *ESSCIRC'14*. [PDF](http://hwacha.org/papers/riscv-esscirc2014.pdf).
-    * **Gemmini**: H. Genc, et al., *arXiv*. [PDF](https://arxiv.org/pdf/1911.09925).
-* **Sims**
-    * **FireSim**: S. Karandikar, et al., *ISCA'18*. [PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf).
-        * **FireSim Micro Top Picks**: S. Karandikar, et al., *IEEE Micro, Top Picks 2018*. [PDF](https://sagark.org/assets/pubs/firesim-micro-top-picks2018.pdf).
-        * **FASED**: D. Biancolin, et al., *FPGA'19*. [PDF](https://people.eecs.berkeley.edu/~biancolin/papers/fased-fpga19.pdf).
-        * **Golden Gate**: A. Magyar, et al., *ICCAD'19*. [PDF](https://davidbiancolin.github.io/papers/goldengate-iccad19.pdf).
-        * **FirePerf**: S. Karandikar, et al., *ASPLOS'20*. [PDF](https://sagark.org/assets/pubs/fireperf-asplos2020.pdf).
-* **Tools**
-    * **Chisel**: J. Bachrach, et al., *DAC'12*. [PDF](https://people.eecs.berkeley.edu/~krste/papers/chisel-dac2012.pdf).
-    * **FIRRTL**: A. Izraelevitz, et al., *ICCAD'17*. [PDF](https://ieeexplore.ieee.org/document/8203780).
-    * **Chisel DSP**: A. Wang, et al., *DAC'18*. [PDF](https://ieeexplore.ieee.org/document/8465790).
-* **VLSI**
-    * **Hammer**: E. Wang, et al., *ISQED'20*. [PDF](https://www.isqed.org/English/Archives/2020/Technical_Sessions/113.html).
+Tandem Verification is also missing and not currently planned to be re-implemented.
 
+# FireSim
 
+More details on how to build a LMCO-enabled FireSim image can be found here (TBD).
 
-[hwacha]:http://hwacha.org
-[hammer]:https://github.com/ucb-bar/hammer
-[firesim]:https://fires.im
-[ucb-bar]: http://bar.eecs.berkeley.edu
-[eecs]: https://eecs.berkeley.edu
-[berkeley]: https://berkeley.edu
-[riscv]: https://riscv.org/
-[rocket-chip]: https://github.com/freechipsproject/rocket-chip
-[boom]: https://github.com/ucb-bar/riscv-boom
-[firemarshal]: https://github.com/firesim/FireMarshal/
-[ariane]: https://github.com/pulp-platform/ariane/
+# Building a HARD-enabled Rocket core
+
+## Initialize chipyard
+
+You can follow the normal chipyard instructions to build a vanilla rocket core. Or the short version is just run this command:
+```
+./scripts/init-submodules-no-riscv-tools-nolog.sh
+```
+**Note**: You should always use this script to update submodules in chipyard. If you use `git submodules --recursive`, you'll get a ton of unnecessary cruft.
+
+## Applying the patch
+
+At the root chipyard directory, run:
+```
+make -f Makefile.lmco patch
+```
+This will apply the patch file to rocket-chip, making all new builds include the HARD pipeline modifications.
+
+## Build (early) CloudGFE Rocket
+
+Coming soon.. This is already included in the branch, but not packaged up nicely to run.
+
+## Build Generic Rocket
+
+As the HARD patch is applied to Rocket directly, you can just build the normal chipyard config to test it:
+```
+cd sims/verilator or sims/vcs
+make
+```
+
+This will make the default `RocketConfig`.
+
+## Build (nearly) GFE-Compatible Netlist (Untested)
+
+With the caveats mentioned earlier, there is a basic setup included in the top-level Makefile to generate a drop-in replacement for the GFE verilog files.
+
+At the top chipyard folder:
+```
+make -f Makefile.lmco lmco_p2
+```
+
+This will generate `generated-src/chipyard.GaloisTop.P2Config/galois.system.P2TVFPGAConfig.v` and `generated-src/chipyard.GaloisTop.P2Config/galois.system.P2TVFPGAConfig.behav_srams.v` files that can replace the existing files in `gfe/chisel_processors/P2/xilinx_ip/hdl/`.
+
+This has not yet been fully tested to a final bitstream running on a VCU118.
