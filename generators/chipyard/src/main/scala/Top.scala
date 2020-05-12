@@ -22,6 +22,7 @@ class Top(implicit p: Parameters) extends System
   with chipyard.CanHavePeripheryIceNICSSITH // Enables optionally adding the IceNIC for FireSim, SSITH-edition to fix address
   with chipyard.example.CanHavePeripheryInitZero // Enables optionally adding the initzero example widget
   with chipyard.example.CanHavePeripheryGCD // Enables optionally adding the GCD example widget
+  with chipyard.CanHaveChosenDTSEntry // Adds a "chosen" entry to DTS
 {
   override lazy val module = new TopModule(this)
 }

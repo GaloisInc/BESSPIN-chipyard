@@ -3,11 +3,12 @@ package chipyard
 import chisel3._
 import chisel3.util.Pipe
 import freechips.rocketchip.config.Config
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
+import freechips.rocketchip.diplomacy.{Binding, DTSTimebase, Description, Device, LazyModule, LazyModuleImp, Resource, ResourceAlias, ResourceAnchors, ResourceBinding, ResourceBindings, ResourceInt, ResourceString}
 import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.util.PlusArg
 import icenet._
 import testchipip.{BlockDeviceController, BlockDeviceIO, BlockDeviceKey, BlockDeviceModel, SimBlockDevice}
+import sifive.blocks.devices.uart.TLUART
 import ssith.SSITHTilesKey
 
 class SSITHConfig extends Config(
@@ -125,3 +126,35 @@ trait CanHavePeripheryIceNICSSITHModuleImp extends LazyModuleImp {
         sim.io.net <> net.get
     }
 }
+
+trait CanHaveChosenDTSEntry {this: BaseSubsystem => {
+
+    val chosen = new Device {
+      def describe(resources: ResourceBindings): Description = {
+        Description("chosen", Map(
+            "bootargs" -> Seq(ResourceString("earlyprintk console=hvc0 earlycon=sbi"))) ++
+          resources("stdout").zipWithIndex.map { case (Binding(_, value), i) =>
+              (s"stdout-path" -> Seq(value))})
+      }
+    }
+
+    val timebase = new Device {
+        def describe(resources: ResourceBindings): Description =
+            Description("cpus", Map() ++
+              resources("time").zipWithIndex.map { case (Binding(_, value), i) =>
+                  (s"timebase-frequency" -> Seq(value))})
+    }
+
+    ResourceBinding {
+        Resource(timebase, "time").bind(ResourceInt(p(DTSTimebase)))
+    }
+
+    this.getChildren.foreach { m =>
+      m match {
+        case (mod: TLUART) => ResourceBinding {
+            Resource(chosen, "stdout").bind(ResourceAlias(mod.device.label))
+        }
+        case _ => {}
+      }
+    }
+}}
