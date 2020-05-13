@@ -93,7 +93,6 @@ object GenerateSimFiles extends App with HasGenerateSimConfig {
     "/csrc/remote_bitbang.h",
     "/csrc/remote_bitbang.cc",
     "/vsrc/EICG_wrapper.v",
-    "/vsrc/SSITHCore.v",
   ) ++ (sim match { // simulator specific files to include
     case VerilatorSimulator => Seq(
       "/csrc/emulator.cc",

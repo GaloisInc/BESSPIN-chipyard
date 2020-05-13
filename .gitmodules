@@ -119,3 +119,6 @@
 [submodule "tools/DRAMSim2"]
 	path = tools/DRAMSim2
 	url = https://github.com/firesim/DRAMSim2.git
+[submodule "generators/ssith/repos/bluespec_p2"]
+	path = generators/ssith/repos/bluespec_p2
+	url = https://github.com/bluespec/Flute.git
