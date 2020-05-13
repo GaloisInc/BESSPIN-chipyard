@@ -50,7 +50,7 @@ class SSITHCoreBlackbox( coreType: SSITHCoreType,
     verilogDir.getAbsolutePath()
   } else {
     // We are running in FireSim, need to use expanded path
-    s"target-design/chipyard/generators/ssith/src/main/resources/vsrc"
+    s"target-rtl/chipyard/generators/ssith/src/main/resources/vsrc"
   }
   val make = s"make -C ${verilogDirPath} ${coreType}"
   val proc = make
