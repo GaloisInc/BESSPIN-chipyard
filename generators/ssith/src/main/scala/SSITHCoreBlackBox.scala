@@ -1,10 +1,13 @@
 package ssith
 
+import java.io.File
+
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, ExtModule, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxResourceAnno, BlackBoxSourceHelper}
 import freechips.rocketchip.amba.axi4.AXI4BundleParameters
 import ssith.SSITHCoreType.SSITHCoreType
+
 import scala.sys.process._
 
 class SSITHCoreBlackbox( coreType: SSITHCoreType,
@@ -40,10 +43,18 @@ class SSITHCoreBlackbox( coreType: SSITHCoreType,
   val CLK_jtag_tclk_out = IO(Output(Bool()))
   val CLK_GATE_jtag_tclk_out = IO(Output(Bool()))
 
-    // pre-process the verilog to remove "includes" and combine into one file
-    val make = s"make -C generators/ssith/src/main/resources/vsrc ${coreType}"
-    val proc = make
-    require (proc.! == 0, "Failed to run preprocessing step")
+  // pre-process the verilog to remove "includes" and combine into one file
+  val verilogDir = new File(s"generators/ssith/src/main/resources/vsrc")
+
+  val verilogDirPath = if (verilogDir.exists()) {
+    verilogDir.getAbsolutePath()
+  } else {
+    // We are running in FireSim, need to use expanded path
+    s"target-design/chipyard/generators/ssith/src/main/resources/vsrc"
+  }
+  val make = s"make -C ${verilogDirPath} ${coreType}"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
   val anno = new ChiselAnnotation with RunFirrtlTransform {
