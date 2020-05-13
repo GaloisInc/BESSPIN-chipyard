@@ -205,6 +205,13 @@ class FireSimArianeConfig extends Config(
 //**********************************************************************************
 //* SSITH Configurations
 //*********************************************************************************/
+class WithBluespecP1 extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.BLUESPECP1)
+class WithBluespecP2 extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.BLUESPECP2)
+class WithBluespecP3 extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.BLUESPECP3)
+class WithChiselP1   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP1)
+class WithChiselP2   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP2)
+class WithChiselP3   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP3)
+
 class FireSimSSITHConfig extends Config(
   new WithDefaultFireSimBridges ++
   new WithDefaultMemModel ++

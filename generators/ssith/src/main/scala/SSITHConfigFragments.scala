@@ -19,6 +19,7 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.debug.DebugModuleKey
+import ssith.SSITHCoreType.SSITHCoreType
 
 
 /**
@@ -91,4 +92,8 @@ class WithIntegratedPlicClintDebug extends Config((site, here, up) => {
 class WithSSITHBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(address = 0x70000000, hang = 0x70000000,
     contentFileName = s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+})
+
+class WithSSITHCoreType(coreType: SSITHCoreType) extends Config((site, here, up) => {
+  case SSITHTilesKey => up(SSITHTilesKey) map (tile => tile.copy(coreType = coreType))
 })
