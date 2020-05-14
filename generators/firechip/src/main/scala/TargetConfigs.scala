@@ -27,20 +27,6 @@ import firesim.configs._
 import chipyard.{BuildTop}
 import chipyard.config.ConfigValName._
 
-class WithGFEBootROM extends Config((site, here, up) => {
-  case BootROMParams => {
-    val chipyardBootROM = new File(s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
-    val firesimBootROM = new File(s"./target-rtl/chipyard/bootrom/bootrom.gfemem.rv${site(XLen)}.img")
-
-    val bootROMPath = if (chipyardBootROM.exists()) {
-      chipyardBootROM.getAbsolutePath()
-    } else {
-      firesimBootROM.getAbsolutePath()
-    }
-    BootROMParams(0x70000000L, hang = 0x70000000L, contentFileName = bootROMPath)
-  }
-})
-
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => {
     val chipyardBootROM = new File(s"./generators/testchipip/bootrom/bootrom.rv${site(XLen)}.img")
@@ -110,7 +96,6 @@ class WithFireSimConfigTweaks extends Config(
 
 // A slightly tweaked version for SSITH Blackbox builds
 class WithFireSimConfigSSITHTweaks extends Config(
-  new WithGFEBootROM ++ // needed to support FireSim-as-top
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
   new WithoutClockGating ++
   new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 4GB
@@ -212,8 +197,16 @@ class WithChiselP1   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP
 class WithChiselP2   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP2)
 class WithChiselP3   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP3)
 
+class FireSimCloudGFERocketConfig extends Config(
+  new WithDefaultFireSimBridges ++
+    new WithDefaultMemModel ++
+    new chipyard.config.WithCloudGFEBootROM ++ // needed to support FireSim-as-top
+    new WithFireSimConfigSSITHTweaks ++
+    new chipyard.RocketConfig)
+
 class FireSimSSITHConfig extends Config(
   new WithDefaultFireSimBridges ++
   new WithDefaultMemModel ++
+  new chipyard.config.WithSSITHBlackBoxBootROM ++ // needed to support FireSim-as-top
   new WithFireSimConfigSSITHTweaks ++
   new chipyard.SSITHConfig)

@@ -1,5 +1,5 @@
-bootrom_img = bootrom.ssith.rv64.img bootrom.ssith.rv32.img
-bootrom_dump = bootrom.ssith.rv64.dump bootrom.ssith.rv32.dump
+bootrom_img = bootrom.cloudgfe.rv64.img bootrom.cloudgfe.rv32.img bootrom.ssithblackbox.rv64.img bootrom.ssithblackbox.rv32.img
+bootrom_dump = bootrom.cloudgfe.rv64.dump bootrom.cloudgfe.rv32.dump bootrom.ssithblackbox.rv64.dump bootrom.ssithblackbox.rv32.dump
 
 GCC=riscv64-unknown-elf-gcc
 CFLAGS_RV64=-mabi=lp64 -march=rv64ima

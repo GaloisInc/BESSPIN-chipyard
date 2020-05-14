@@ -36,14 +36,29 @@ class WithBootROM extends Config((site, here, up) => {
     contentFileName = s"./bootrom/bootrom.rv${site(XLen)}.img")
 })
 
-class WithGFEBootROM extends Config((site, here, up) => {
+class WithSSITHBlackBoxBootROM extends Config((site, here, up) => {
   case BootROMParams => {
-    val chipyardBootROM = new File(s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+    val chipyardBootROM = new File(s"./bootrom/bootrom.ssithblackbox.rv${site(XLen)}.img")
+    val firesimBootROM = new File(s"./target-rtl/chipyard/bootrom/bootrom.ssithblackbox.rv${site(XLen)}.img")
 
     val bootROMPath = if (chipyardBootROM.exists()) {
       chipyardBootROM.getAbsolutePath()
     } else {
-      throw new Exception("Could not find bootrom file")
+      firesimBootROM.getAbsolutePath()
+    }
+    BootROMParams(0x70000000L, hang = 0x70000000L, contentFileName = bootROMPath)
+  }
+})
+
+class WithCloudGFEBootROM extends Config((site, here, up) => {
+  case BootROMParams => {
+    val chipyardBootROM = new File(s"./bootrom/bootrom.cloudgfe.rv${site(XLen)}.img")
+    val firesimBootROM = new File(s"./target-rtl/chipyard/bootrom/bootrom.cloudgfe.rv${site(XLen)}.img")
+
+    val bootROMPath = if (chipyardBootROM.exists()) {
+      chipyardBootROM.getAbsolutePath()
+    } else {
+      firesimBootROM.getAbsolutePath()
     }
     BootROMParams(0x70000000L, hang = 0x70000000L, contentFileName = bootROMPath)
   }
