@@ -4,9 +4,11 @@ import chipsalliance.rocketchip.config.Parameters
 import chisel3._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.devices.tilelink.CanHavePeripheryPLIC
 import freechips.rocketchip.regmapper.{RegField, RegFieldDesc}
+import freechips.rocketchip.subsystem.{BaseSubsystem}
 import freechips.rocketchip.tile.BaseTile
-import freechips.rocketchip.tilelink.TLRegisterNode
+import freechips.rocketchip.tilelink.{TLFragmenter, TLRegisterNode}
 
 // Very simple memory mapped module that converts a write to an interrupt. Can be used to replace
 // CLINT in FireSim/Chipyard simulations for reset functionality.
@@ -44,4 +46,13 @@ trait HasMMIntDevice { this: BaseTile =>
   connectTLSlave(mmint.node, 4)
   val tsiInterruptNode = IntSinkNode(IntSinkPortSimple())
   tsiInterruptNode := mmint.intnode
+}
+
+trait CanHavePeripheryMMIntDevice { this: BaseSubsystem with CanHavePeripheryPLIC =>
+  // Create memory mapped interrupt device
+  if (p(SSITHTilesKey).isEmpty) {
+    val mmint = LazyModule(new MMInt(0x2000000, cbus.beatBytes))
+    mmint.node := cbus.coupleTo("coupler_to_mmint") { TLFragmenter(cbus) := _ }
+    plicOpt.map { _.intnode := mmint.intnode }
+  }
 }

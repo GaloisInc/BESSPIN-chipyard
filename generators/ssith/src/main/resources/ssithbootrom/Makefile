@@ -25,3 +25,6 @@ dump: $(bootrom_dump)
 
 clean:
 	rm -f *.elf *.dump *.img
+
+install: $(bootrom_img)
+	@cp -v $^ ../../../../../../bootrom/

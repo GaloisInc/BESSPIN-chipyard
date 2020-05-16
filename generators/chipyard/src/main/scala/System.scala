@@ -13,6 +13,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.{DontTouch}
+import ssith.CanHavePeripheryMMIntDevice
 
 // ---------------------------------------------------------------------
 // Base system that uses the debug test module (dtm) to bringup the core
@@ -27,6 +28,7 @@ class System(implicit p: Parameters) extends Subsystem
   with CanHaveMasterAXI4MemPort
   with CanHaveMasterAXI4MMIOPort
   with CanHaveSlaveAXI4Port
+  with CanHavePeripheryMMIntDevice
   with HasPeripheryBootROM
 {
   override lazy val module = new SystemModule(this)

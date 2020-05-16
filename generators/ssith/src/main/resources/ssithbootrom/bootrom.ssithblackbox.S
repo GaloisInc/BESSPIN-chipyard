@@ -28,27 +28,9 @@ wfi_loop: // wait for MSIP interrupt to start program execution
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
+  li a1, 0x2000000 // base address of mmint
   li s0, 0xC200004
   lw a2, 0(s0)
-  li a1, 0x10000000 // base address of clint
-  csrr a0, mhartid
-  bnez a0, boot_core
-  addi a2, a1, 4
-  li a3, 1
-interrupt_loop: // trigger MSIP interrupts for other harts so that they also boot
-  sw a3, 0(a2)
-  addi a2, a2, 4
-  lw a3, -4(a2)
-  bnez a3, interrupt_loop
-  j boot_core_hart0
-
-// other harts must wait until MSIP of hart 0 is cleared to continue
-boot_core:
-  lw t0, 0(a1)       // load hart 0 MSIP
-  bnez t0, boot_core // block until hart 0 clears own MSIP
-  sll a0, a0, 2      // offset for hart MSIP
-  add a1, a0, a1
-boot_core_hart0:   // begin executing code at DRAM_BASE
   sw zero, 0(a1)   // clear the interrupt
   sw a2, 0(s0)     // clear the PLIC
   li s0, 0xC002000 // Disable the PLIC
