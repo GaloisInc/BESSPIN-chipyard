@@ -4,6 +4,7 @@ import chipsalliance.rocketchip.config.Field
 import chisel3._
 import chisel3.util.Pipe
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.devices.debug.dtmJTAGAddrs
 import freechips.rocketchip.diplomacy.{Binding, DTSTimebase, Description, Device, LazyModule, LazyModuleImp, Resource, ResourceAlias, ResourceAnchors, ResourceBinding, ResourceBindings, ResourceInt, ResourceString}
 import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBusKey, RocketTilesKey, WithTimebase}
 import freechips.rocketchip.util.PlusArg
@@ -188,3 +189,11 @@ trait CanHaveChosenDTSEntry {this: BaseSubsystem => {
       }
     }
 }}
+
+// Custom implementation of dtmJtagAddrs to support our particular instantiation of Xilinx BSCANE primitives
+class xilinxAddrs extends dtmJTAGAddrs (
+    IDCODE       = 0x002924,
+    DTM_INFO     = 0x022924,
+    DMI_ACCESS   = 0x003924
+)
+
