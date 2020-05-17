@@ -202,7 +202,7 @@ class FireSimCloudGFERocketConfig extends Config(
     new WithDefaultMemModel ++
     new chipyard.config.WithCloudGFEBootROM ++ // needed to support FireSim-as-top
     new WithFireSimConfigSSITHTweaks ++
-    new chipyard.RocketConfig)
+    new chipyard.CloudGFERocketConfig)
 
 class FireSimSSITHConfig extends Config(
   new WithDefaultFireSimBridges ++
