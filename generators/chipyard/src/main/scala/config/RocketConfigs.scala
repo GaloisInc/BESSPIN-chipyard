@@ -1,6 +1,7 @@
 package chipyard
 
-import freechips.rocketchip.config.{Config}
+import freechips.rocketchip.config.Config
+import ssith.WithMMIntDevice
 
 // --------------
 // Rocket Configs
@@ -14,11 +15,9 @@ class RocketConfig extends Config(
   new chipyard.iobinders.WithSimSerial ++                        // drive TSI with SimSerial for testing
   new testchipip.WithTSI ++                                      // use testchipip serial offchip link
   new chipyard.config.WithNoGPIO ++                              // no top-level GPIO pins (overrides default set in sifive-blocks)
-  new chipyard.config.WithCloudGFEBootROM ++                     // use default bootrom
+  new chipyard.config.WithBootROM ++                             // use default bootrom
   new chipyard.config.WithUART ++                                // add a UART
   new chipyard.config.WithL2TLBs(1024) ++                        // use L2 TLBs
-  new chipyard.config.WithGFEClint ++
-  new chipyard.config.WithGFEMem ++
   new freechips.rocketchip.subsystem.WithNoMMIOPort ++           // no top-level MMIO master port (overrides default set in rocketchip)
   new freechips.rocketchip.subsystem.WithNoSlavePort ++          // no top-level MMIO slave port (overrides default set in rocketchip)
   new freechips.rocketchip.subsystem.WithInclusiveCache ++       // use Sifive L2 cache
@@ -384,3 +383,27 @@ class RingSystemBusRocketConfig extends Config(
   new freechips.rocketchip.subsystem.WithNExtTopInterrupts(0) ++
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
+
+class CloudGFERocketConfig extends Config(
+  new chipyard.iobinders.WithUARTAdapter ++                      // display UART with a SimUARTAdapter
+  new chipyard.iobinders.WithTieOffInterrupts ++                 // tie off top-level interrupts
+  new chipyard.iobinders.WithBlackBoxSimMem ++                   // drive the master AXI4 memory with a SimAXIMem
+  new chipyard.iobinders.WithTiedOffDebug ++                     // tie off debug (since we are using SimSerial for testing)
+  new chipyard.iobinders.WithSimSerial ++                        // drive TSI with SimSerial for testing
+  new testchipip.WithTSI ++                                      // use testchipip serial offchip link
+  new WithIceBlockAddress(BigInt(0x40015000)) ++
+  new WithIceNICAddress(BigInt(0x62100000)) ++
+  new WithMMIntDevice(BigInt(0x2000000)) ++
+  new WithSSITHTimebase ++
+  new chipyard.config.WithNoGPIO ++                              // no top-level GPIO pins (overrides default set in sifive-blocks)
+  new chipyard.config.WithCloudGFEBootROM ++                     // use default bootrom
+  new chipyard.config.WithUART ++                                // add a UART
+  new chipyard.config.WithL2TLBs(1024) ++                        // use L2 TLBs
+  new chipyard.config.WithGFEClint ++
+  new chipyard.config.WithGFEMem ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++           // no top-level MMIO master port (overrides default set in rocketchip)
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++          // no top-level MMIO slave port (overrides default set in rocketchip)
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++       // use Sifive L2 cache
+  new freechips.rocketchip.subsystem.WithNExtTopInterrupts(0) ++ // no external interrupts
+  new freechips.rocketchip.subsystem.WithNBigCores(1) ++         // single rocket-core
+  new freechips.rocketchip.system.BaseConfig)                    // "base" rocketchip system

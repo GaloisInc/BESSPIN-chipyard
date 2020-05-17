@@ -1,27 +1,32 @@
 package chipyard
 
+import chipsalliance.rocketchip.config.Field
 import chisel3._
 import chisel3.util.Pipe
 import freechips.rocketchip.config.Config
 import freechips.rocketchip.diplomacy.{Binding, DTSTimebase, Description, Device, LazyModule, LazyModuleImp, Resource, ResourceAlias, ResourceAnchors, ResourceBinding, ResourceBindings, ResourceInt, ResourceString}
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBusKey, RocketTilesKey, WithTimebase}
 import freechips.rocketchip.util.PlusArg
 import icenet._
 import testchipip.{BlockDeviceController, BlockDeviceIO, BlockDeviceKey, BlockDeviceModel, SimBlockDevice}
 import sifive.blocks.devices.uart.TLUART
-import ssith.SSITHTilesKey
+import ssith.{SSITHTilesKey, WithMMIntDevice}
 
 class SSITHConfig extends Config(
     new chipyard.iobinders.WithUARTAdapter ++                      // display UART with a SimUARTAdapter
     new chipyard.iobinders.WithTieOffInterrupts ++                 // tie off top-level interrupts
-    new chipyard.iobinders.WithSimAXIMem ++                        // drive the master AXI4 memory with a SimAXIMem
+    new chipyard.iobinders.WithSimAXIMem ++                        // drive the master AXI4 memory with a SimAXIMem (SimDRAM has some width issue with Verilator)
     new chipyard.iobinders.WithTiedOffDebug ++                     // tie off debug (since we are using SimSerial for testing)
     new chipyard.iobinders.WithSimSerial ++                        // drive TSI with SimSerial for testing
     new testchipip.WithTSI ++                                      // use testchipip serial offchip link
+    new WithIceBlockAddress(BigInt(0x40015000)) ++
+    new WithIceNICAddress(BigInt(0x62100000)) ++
+    new WithMMIntDevice(BigInt(0x2000000)) ++
+    new WithSSITHTimebase ++
     new chipyard.config.WithNoGPIO ++                              // no top-level GPIO pins (overrides default set in sifive-blocks)
     new chipyard.config.WithUART ++                                // add a UART
     new ssith.WithSSITHMemPort ++                                  // Change location of main memory
-    new chipyard.config.WithSSITHBlackBoxBootROM ++                // Use the SSITH Bootrom to workaround incompatibility issues
+    new chipyard.config.WithCloudGFEBootROM ++                     // Use the SSITH Bootrom to workaround incompatibility issues
     new ssith.WithIntegratedPlicClintDebug ++                      // Removes duplicated PLIC, CLINT, and Debug Module, which are all inside core
     new freechips.rocketchip.subsystem.WithNoMMIOPort ++           // no top-level MMIO master port (overrides default set in rocketchip)
     new freechips.rocketchip.subsystem.WithNoSlavePort ++          // no top-level MMIO slave port (overrides default set in rocketchip)
@@ -30,9 +35,24 @@ class SSITHConfig extends Config(
     new ssith.WithNSSITHCores(1) ++                                // single SSITH core
     new freechips.rocketchip.system.BaseConfig)                    // "base" rocketchip system
 
+class WithSSITHTimebase() extends Config((site, here, up) => {
+    case DTSTimebase => up(PeripheryBusKey).frequency
+    case SSITHTilesKey => up(SSITHTilesKey, site) map { r =>
+        r.copy(core = r.core.copy(bootFreqHz = up(PeripheryBusKey).frequency)) }
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+        r.copy(core = r.core.copy(bootFreqHz = up(PeripheryBusKey).frequency)) }
+})
+
 // There's no good way to change the block or net device address, so override the traits here
+
+case object IceBlockAddress extends Field[Option[BigInt]](None)
+
+class WithIceBlockAddress(address: BigInt) extends Config((site, here, up) => {
+    case IceBlockAddress => Some(address)
+})
+
 trait CanHavePeripheryBlockDeviceSSITH { this: BaseSubsystem =>
-    private val address = if (p(SSITHTilesKey).nonEmpty) 0x40015000 else 0x10015000
+    private val address = p(IceBlockAddress).getOrElse(BigInt(0x10015000))
     private val portName = "blkdev-controller"
 
     val controller = p(BlockDeviceKey).map { _ =>
@@ -68,8 +88,14 @@ trait CanHavePeripheryBlockDeviceSSITHModuleImp extends LazyModuleImp {
     }
 }
 
+case object IceNICAddress extends Field[Option[BigInt]](None)
+
+class WithIceNICAddress(address: BigInt) extends Config((site, here, up) => {
+    case IceNICAddress => Some(address)
+})
+
 trait CanHavePeripheryIceNICSSITH { this: BaseSubsystem =>
-    private val address = if (p(SSITHTilesKey).nonEmpty) BigInt(0x62100000) else BigInt(0x10016000)
+    private val address = p(IceNICAddress).getOrElse(BigInt(0x10016000))
     private val portName = "Ice-NIC"
 
     val icenicOpt = p(NICKey).map { params =>

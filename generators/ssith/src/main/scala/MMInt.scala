@@ -1,12 +1,12 @@
 package ssith
 
-import chipsalliance.rocketchip.config.Parameters
+import chipsalliance.rocketchip.config.{Config, Field, Parameters}
 import chisel3._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.devices.tilelink.CanHavePeripheryPLIC
 import freechips.rocketchip.regmapper.{RegField, RegFieldDesc}
-import freechips.rocketchip.subsystem.{BaseSubsystem}
+import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.tile.BaseTile
 import freechips.rocketchip.tilelink.{TLFragmenter, TLRegisterNode}
 
@@ -40,19 +40,17 @@ class MMInt(address: BigInt, beatBytes: Int)(implicit p: Parameters) extends Laz
   }
 }
 
-trait HasMMIntDevice { this: BaseTile =>
-  // Create memory mapped interrupt device
-  val mmint = LazyModule(new MMInt(0x2000000, 4))
-  connectTLSlave(mmint.node, 4)
-  val tsiInterruptNode = IntSinkNode(IntSinkPortSimple())
-  tsiInterruptNode := mmint.intnode
-}
+case object MMIntDeviceKey extends Field[Option[BigInt]](None)
+
+class WithMMIntDevice(address: BigInt) extends Config((site, here, up) => {
+  case MMIntDeviceKey => Some(address)
+})
 
 trait CanHavePeripheryMMIntDevice { this: BaseSubsystem with CanHavePeripheryPLIC =>
   // Create memory mapped interrupt device
-  if (p(SSITHTilesKey).isEmpty) {
-    val mmint = LazyModule(new MMInt(0x2000000, cbus.beatBytes))
+  p(MMIntDeviceKey).map { mmi =>
+    val mmint = LazyModule(new MMInt(mmi, cbus.beatBytes))
     mmint.node := cbus.coupleTo("coupler_to_mmint") { TLFragmenter(cbus) := _ }
-    plicOpt.map { _.intnode := mmint.intnode }
+    ibus.fromSync := mmint.intnode
   }
 }

@@ -15,11 +15,11 @@ _hang: // reset vector
   li a1, 0xC200000
   sw zero, 0(a1)
   li a1, 0xC002000
-  li a0, 0x8
+  li a0, 0x2
   sw a0, 0(a1)
   li a0, 7
   li a1, 0xC000000
-  sw a0, 0x0C(a1)
+  sw a0, 0x04(a1)
 wfi_loop: // wait for MSIP interrupt to start program execution
   wfi
   j wfi_loop
@@ -36,7 +36,7 @@ _start:
   li s0, 0xC002000 // Disable the PLIC
   li s1, 0xC000000 
   sw zero, 0(s0)
-  sw zero, 0x0C(s1)
+  sw zero, 0x04(s1)
   li a0, DRAM_BASE // program reset vector
   csrw mepc, a0    // return from interrupt to start of user program
   csrr a0, mhartid // hartid for next level bootloader

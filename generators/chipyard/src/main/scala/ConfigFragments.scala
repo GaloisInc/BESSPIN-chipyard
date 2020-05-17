@@ -71,7 +71,7 @@ class WithGFEClint extends Config((site, here, up) => {
 class WithGFEMem extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = 0x80000000L,
-    size = 0x10000000L,
+    size = 0x80000000L,
     beatBytes = site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
 })

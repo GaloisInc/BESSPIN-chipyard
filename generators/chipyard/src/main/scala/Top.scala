@@ -13,6 +13,7 @@ import freechips.rocketchip.devices.tilelink._
 
 // DOC include start: Top
 class Top(implicit p: Parameters) extends System
+  with ssith.CanHavePeripheryMMIntDevice // Should be at the top to ensure it gets assigned interrupt 1
   with testchipip.CanHaveTraceIO // Enables optionally adding trace IO
   with testchipip.CanHaveBackingScratchpad // Enables optionally adding a backing scratchpad
   with chipyard.CanHavePeripheryBlockDeviceSSITH // Enables optionally adding the block device, SSITH-edition to fix address

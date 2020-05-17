@@ -95,7 +95,6 @@ class SSITHTile(
     with HasIntegratedGFEDebug
     with HasIntegratedGFECLINT
     with HasIntegratedGFEPLIC
-    with HasMMIntDevice
 {
   /**
     * Setup parameters:
@@ -231,8 +230,7 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
 
-  // Connect TSI interrupt from MMInt to 16
-  core.cpu_external_interrupt_req := (outer.tsiInterruptNode.in(0)._1.asUInt() << 15).asUInt() | outer.getSSITHInterrupts()
+  core.cpu_external_interrupt_req := outer.getSSITHInterrupts()
 
   if (outer.SSITHParams.trace) {
     require(false, "Not currently implemented!")

@@ -50,7 +50,6 @@ class WithToFromHostCaching extends Config((site, here, up) => {
   */
 class WithNSSITHCores(n: Int) extends Config(
   new WithNormalSSITHSys ++
-  new WithTimebase(BigInt(50000000)) ++
     new Config((site, here, up) => {
       case SSITHTilesKey => {
         List.tabulate(n)(i => SSITHTileParams(hartId = i))

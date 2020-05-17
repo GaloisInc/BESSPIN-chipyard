@@ -28,7 +28,6 @@ class System(implicit p: Parameters) extends Subsystem
   with CanHaveMasterAXI4MemPort
   with CanHaveMasterAXI4MMIOPort
   with CanHaveSlaveAXI4Port
-  with CanHavePeripheryMMIntDevice
   with HasPeripheryBootROM
 {
   override lazy val module = new SystemModule(this)
