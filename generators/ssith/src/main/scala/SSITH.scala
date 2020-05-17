@@ -138,6 +138,7 @@ class SSITHTile(
 
   val fakeRocketParams = RocketTileParams(
     dcache = SSITHParams.dcache,
+    icache = SSITHParams.icache,
     hartId = SSITHParams.hartId,
     name   = SSITHParams.name,
     btb    = SSITHParams.btb,
