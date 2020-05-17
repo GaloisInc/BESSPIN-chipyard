@@ -35,8 +35,8 @@ class SSITHConfig extends Config(
     new ssith.WithNSSITHCores(1) ++                                // single SSITH core
     new freechips.rocketchip.system.BaseConfig)                    // "base" rocketchip system
 
-class WithSSITHTimebase() extends Config((site, here, up) => {
-    case DTSTimebase => up(PeripheryBusKey).frequency
+class WithSSITHTimebase(timebase: Option[BigInt] = None) extends Config((site, here, up) => {
+    case DTSTimebase => timebase.getOrElse(up(PeripheryBusKey).frequency)
     case SSITHTilesKey => up(SSITHTilesKey, site) map { r =>
         r.copy(core = r.core.copy(bootFreqHz = up(PeripheryBusKey).frequency)) }
     case RocketTilesKey => up(RocketTilesKey, site) map { r =>

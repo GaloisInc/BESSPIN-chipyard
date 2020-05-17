@@ -3,28 +3,28 @@ package firesim.firesim
 import java.io.File
 
 import chisel3._
-import chisel3.util.{log2Up}
-import freechips.rocketchip.config.{Parameters, Config}
+import chisel3.util.log2Up
+import freechips.rocketchip.config.{Config, Parameters}
 import freechips.rocketchip.groundtest.TraceGenParams
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.rocket.DCacheParams
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
-import freechips.rocketchip.devices.debug.{DebugModuleParams, DebugModuleKey}
+import freechips.rocketchip.devices.debug.{DebugModuleKey, DebugModuleParams}
 import freechips.rocketchip.diplomacy.LazyModule
 import boom.common.BoomTilesKey
-import testchipip.{BlockDeviceKey, BlockDeviceConfig, SerialKey, TracePortKey, TracePortParams}
+import testchipip.{BlockDeviceConfig, BlockDeviceKey, SerialKey, TracePortKey, TracePortParams}
 import sifive.blocks.devices.uart.{PeripheryUARTKey, UARTParams}
-import scala.math.{min, max}
+
+import scala.math.{max, min}
 import tracegen.TraceGenKey
 import icenet._
 import ariane.ArianeTilesKey
 import testchipip.WithRingSystemBus
-
 import firesim.bridges._
 import firesim.configs._
-import chipyard.{BuildTop}
+import chipyard.{BuildTop, WithSSITHTimebase}
 import chipyard.config.ConfigValName._
 
 class WithBootROM extends Config((site, here, up) => {
@@ -96,9 +96,10 @@ class WithFireSimConfigTweaks extends Config(
 
 // A slightly tweaked version for SSITH Blackbox builds
 class WithFireSimConfigSSITHTweaks extends Config(
-  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++ // 3.2 GHz
+  new WithSSITHTimebase(Some(BigInt(1000000L))) ++ // Needs to be re-run after setting the periphery frequency
+  new WithPeripheryBusFrequency(BigInt(100000000L)) ++ // 100 MHz
   new WithoutClockGating ++
-  new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 4GB
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 2GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART
