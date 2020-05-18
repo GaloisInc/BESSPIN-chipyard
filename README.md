@@ -25,24 +25,31 @@ to be initialized to zero on reset.
 
 # Rocket
 
-The rocket-chip repo is now a completely unaltered version, commit `4f0cdea85c8a2b849fd582ccc8497892001d06b0`. This is the same commit referenced by
-FireSim v1.9.0.
+The rocket-chip repo has been updated to a SSITH-specific Rocket, commit [edd6d71d2f0cf45b2565a14aa3d387123fcf8e9b](https://gitlab-ext.galois.com/ssith/rocket-chip/-/tree/edd6d71d2f0cf45b2565a14aa3d387123fcf8e9b). This is a slightly altered version of the official rocket-chip commit `4f0cdea85c8a2b849fd582ccc8497892001d06b0`, which is referenced by FireSim v1.9.0.
+
+This SSITH specific commit has modifications to support the Xilinx JTAG connection used in the local GFE.
 
 ## Incompatibilities with GFE Rocket
 
-There are two current known incompatibilities with the existing GFE Rocket:
-* Two new debug signals have been introduced at the top level: `debug_systemjtag_part_number` and `debug_systemjtag_version`. 
-* The Debug Module IR length and register addresses are back at the original locations, so the Xilinx JTAG connection will not work.
+The inconsistencies versus the previously provided GFE Rocket have been resolved, although Xilinx JTAG support is untested at this time.
 
-I have tried to align these to the GFE, but have not been able to without making modifications directly to the rocket-chip repo. This will be done if necessary.
-
-Tandem Verification is also missing and not currently planned to be re-implemented.
+Tandem Verification is missing and not currently planned to be re-implemented.
 
 # FireSim
 
-More details on how to build a LMCO-enabled FireSim image can be found here (TBD).
+Building a HARD-enabled FireSim image will be more automated shortly. To implement it now:
+1. Checkout [firesim](https://github.com/DARPA-SSITH-Demonstrators/firesim) from the DARPA-SSITH-Demonstrators group.
+2. Run the normal setup steps found in the README on the page above, up to the point of _Build Your Own Image_. This will generate all the prerequesites and populate the submodule tree.
+3. On your manager instance, `cd ~/firesim/target-design/chipyard`
+4. `git checkout ssith-lmco; git pull`
+5. `./scripts/init-submodules-no-riscv-tools-nolog.sh`
+6. `make -f Makefile.lmco patch` --> Make sure the patch applies successfully before continuing
+7. `cd ~/firesim/deploy` --> Edit `config_build.ini` and `config_build_recipes.ini` as described in the link in Step 1 to build a `CloudGFERocketConfig`
+8. `firesim buildafi`
 
-# Building a HARD-enabled Rocket core
+Once the LMCO patch has been applied, all future `Rocket` builds will contain the Hard pipeline by default.
+
+# Building a HARD-enabled Rocket core (non-FireSim)
 
 ## Initialize chipyard
 
@@ -60,23 +67,18 @@ make -f Makefile.lmco patch
 ```
 This will apply the patch file to rocket-chip, making all new builds include the HARD pipeline modifications.
 
-## Build (early) CloudGFE Rocket
+## Build CloudGFE Rocket
 
-Coming soon.. This is already included in the branch, but not packaged up nicely to run.
+This closely matches the existing GFE Rocket.
 
-## Build Generic Rocket
-
-As the HARD patch is applied to Rocket directly, you can just build the normal chipyard config to test it:
 ```
 cd sims/verilator or sims/vcs
-make
+make CONFIG=CloudGFERocketConfig
 ```
 
-This will make the default `RocketConfig`.
+## Build GFE-Compatible Netlist (Untested)
 
-## Build (nearly) GFE-Compatible Netlist (Untested)
-
-With the caveats mentioned earlier, there is a basic setup included in the top-level Makefile to generate a drop-in replacement for the GFE verilog files.
+You can also use SSITH Chipyard's ability to create drop-in replacement netlists for the GFE verilog files.
 
 At the top chipyard folder:
 ```
