@@ -44,10 +44,10 @@ Building a HARD-enabled FireSim image will be more automated shortly. To impleme
 4. `git checkout ssith-lmco; git pull`
 5. `./scripts/init-submodules-no-riscv-tools-nolog.sh`
 6. `make -f Makefile.lmco patch` --> Make sure the patch applies successfully before continuing
-7. `cd ~/firesim/deploy` --> Edit `config_build.ini` and `config_build_recipes.ini` as described in the link in Step 1 to build a `CloudGFERocketConfig`
+7. `cd ~/firesim/deploy` --> Edit `config_build.ini` and `config_build_recipes.ini` as described in the link in Step 1 to build a configuration based on `CloudGFERocketConfig`
 8. `firesim buildafi`
 
-Once the LMCO patch has been applied, all future `Rocket` builds will contain the Hard pipeline by default.
+Once the LMCO patch has been applied, all future Rocket-based builds will contain the Hard pipeline by default.
 
 # Building a HARD-enabled Rocket core (non-FireSim)
 
@@ -69,7 +69,7 @@ This will apply the patch file to rocket-chip, making all new builds include the
 
 ## Build CloudGFE Rocket
 
-This closely matches the existing GFE Rocket.
+This closely matches the existing GFE Rocket. It is the same build used for FireSim implementations.
 
 ```
 cd sims/verilator or sims/vcs
@@ -85,6 +85,6 @@ At the top chipyard folder:
 make -f Makefile.lmco lmco_p2
 ```
 
-This will generate `generated-src/chipyard.GaloisTop.P2Config/galois.system.P2TVFPGAConfig.v` and `generated-src/chipyard.GaloisTop.P2Config/galois.system.P2TVFPGAConfig.behav_srams.v` files that can replace the existing files in `gfe/chisel_processors/P2/xilinx_ip/hdl/`.
+This will generate `generated-src/chipyard.GaloisTop.P2TVFPGAConfig/galois.system.P2TVFPGAConfig.v` and `generated-src/chipyard.GaloisTop.P2TVFPGAConfig/galois.system.P2TVFPGAConfig.behav_srams.v` files that can replace the existing files in `gfe/chisel_processors/P2/xilinx_ip/hdl/`.
 
 This has not yet been fully tested to a final bitstream running on a VCU118.
