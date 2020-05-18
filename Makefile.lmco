@@ -10,34 +10,10 @@ patch: $(PATCH_FILE)
 $(PATCH_FILE):
 	@ROCKETCHIP=$(ROCKETCHIP) make -C $(LMCO)/pipeline_interrupt monitor_install
 
-# Adding in some setup to build the verilog for inserting into GFE
-
-base_dir=$(abspath .)
-sim_dir=$(abspath .)
-sim_name=verilator
-
-MODEL             ?= GaloisTop
-VLOG_MODEL        ?= GaloisTop
-CONFIG            ?= P2Config
-TOP               ?= GaloisSystem
-
-#########################################################################################
-# include shared variables
-#########################################################################################
-include $(base_dir)/variables.mk
-include $(base_dir)/common.mk
-
-top_verilog := $(build_dir)/galois.system.P2TVFPGAConfig.v
-top_mems    := $(build_dir)/galois.system.P2TVFPGAConfig.behav_srams.v
-
-$(top_verilog): $(TOP_FILE)
-	cp $< $@
-
-$(top_mems): $(TOP_SMEMS_FILE)
-	cp $< $@
-
-lmco_p2: patch $(top_verilog) $(top_mems)
+# Call general SSITH makefile to actually build verilog
+lmco_p2: patch
+	$(MAKE) -f Makefile.ssith p2
 
 .PHONY: clean
 clean:
-	rm -rf $(gen_dir)
+	$(MAKE) -f Makefile.ssith clean
