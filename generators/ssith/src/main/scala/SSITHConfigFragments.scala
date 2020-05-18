@@ -19,6 +19,7 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.debug.DebugModuleKey
+import ssith.SSITHCoreType.SSITHCoreType
 
 
 /**
@@ -49,12 +50,12 @@ class WithToFromHostCaching extends Config((site, here, up) => {
   */
 class WithNSSITHCores(n: Int) extends Config(
   new WithNormalSSITHSys ++
-  new WithTimebase(BigInt(50000000)) ++
-    new Config((site, here, up) => {
-      case SSITHTilesKey => {
-        List.tabulate(n)(i => SSITHTileParams(hartId = i))
-      }
-    })
+  new WithSSITHCoreType(SSITHCoreType.BLUESPECP2) ++ // Default to the Bluespec P2
+  new Config((site, here, up) => {
+    case SSITHTilesKey => {
+      List.tabulate(n)(i => SSITHTileParams(hartId = i))
+    }
+  })
 )
 
 /**
@@ -91,4 +92,16 @@ class WithIntegratedPlicClintDebug extends Config((site, here, up) => {
 class WithSSITHBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(address = 0x70000000, hang = 0x70000000,
     contentFileName = s"./bootrom/bootrom.gfemem.rv${site(XLen)}.img")
+})
+
+object SSITHCoreTypeP2 {
+  def apply(coreType: SSITHCoreType) = {
+    List(SSITHCoreType.BLUESPECP2, SSITHCoreType.CHISELP2).contains(coreType)
+  }
+}
+
+class WithSSITHCoreType(coreType: SSITHCoreType) extends Config((site, here, up) => {
+  case SSITHTilesKey => up(SSITHTilesKey) map (tile => tile.copy(coreType = coreType,
+    dcache = Some(tile.dcache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16)),
+    icache = Some(tile.icache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16))))
 })

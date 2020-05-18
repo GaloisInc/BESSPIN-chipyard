@@ -4,12 +4,12 @@ package chipyard
 import chisel3._
 import chipsalliance.rocketchip.config.{Config, Parameters}
 import chisel3.util.Decoupled
+import freechips.rocketchip.config.Config
+import freechips.rocketchip.devices.debug.{ExportDebug, JTAG, JtagDTMConfig, JtagDTMKey, dtmJTAGAddrs}
 import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
-import freechips.rocketchip.subsystem.{CanHaveMasterAXI4MMIOPort, CanHaveMasterAXI4MMIOPortModuleImp, CanHaveMasterAXI4MemPort,
-  CanHaveMasterAXI4MemPortModuleImp, CanHaveSlaveAXI4Port, CanHaveSlaveAXI4PortModuleImp, HasAsyncExtInterrupts,
-  HasExtInterruptsModuleImp, HasHierarchicalBusTopology, HasRTCModuleImp, HasResetVectorWire}
-import freechips.rocketchip.util.{DontTouch}
+import freechips.rocketchip.subsystem.{CanHaveMasterAXI4MMIOPort, CanHaveMasterAXI4MMIOPortModuleImp, CanHaveMasterAXI4MemPort, CanHaveMasterAXI4MemPortModuleImp, CanHaveSlaveAXI4Port, CanHaveSlaveAXI4PortModuleImp, HasAsyncExtInterrupts, HasExtInterruptsModuleImp, HasHierarchicalBusTopology, HasRTCModuleImp, HasResetVectorWire}
+import freechips.rocketchip.util.DontTouch
 
 // Simple top-level harness to satisfy build system
 class GaloisTop(implicit p: Parameters) extends Module with DontTouch {
@@ -50,19 +50,38 @@ class TraceVector extends Bundle {
   val count = UInt(7.W)
 }
 
+// Custom implementation of dtmJtagAddrs to support our particular instantiation of Xilinx BSCANE primitives
+class xilinxAddrs extends dtmJTAGAddrs (
+  IDCODE       = 0x002924,
+  DTM_INFO     = 0x022924,
+  DMI_ACCESS   = 0x003924
+)
+
+class WithXilinxJtag extends Config ((site, here, up) => {
+  case ExportDebug => up(ExportDebug, site).copy(protocols = Set(JTAG))
+  // Xilinx requires an IR length of 18, special register addresses, and latching TDO on positive edge
+  case JtagDTMKey => JtagDTMConfig(
+    idcodeVersion = 0, idcodePartNum = 0, idcodeManufId = 0, debugIdleCycles = 5,
+    irLength = 18, tdoOnNegEdge = false, includeExtraIO = false, registerAddrs = new xilinxAddrs()
+  )
+})
+
 trait HasGFEBootROMModuleImp extends LazyModuleImp
   with HasResetVectorWire {
   private val params = p(BootROMParams)
   global_reset_vector := params.hang.U
 }
 
+class P2TVFPGAConfig extends P2FPGAConfig {
+  println("WARNING: Building a P2TVFPGAConfig but this will not actually include tandem verification!")
+}
+
 class P2FPGAConfig extends Config(
-  //new WithXilinxJtag ++ // NOTE: Currently incompatible with Xilinx JTAG for VCU118
-    new P2Config
+  new WithXilinxJtag ++
+  new P2Config
 )
 
 class P2Config extends Config(
-  new chipyard.config.WithGFEBootROM() ++
   new ssith.WithSSITHMemPort() ++
   new ssith.WithSSITHMMIOPort() ++
   new chipyard.config.WithGFEClint ++

@@ -1,0 +1,33 @@
+# Build GFE Classic compatible P1 and P2 Chisel configurations
+
+all: p2
+
+base_dir=$(abspath .)
+sim_dir=$(abspath .)
+sim_name=verilator
+
+MODEL             ?= GaloisTop
+VLOG_MODEL        ?= GaloisTop
+CONFIG            ?= P2TVFPGAConfig
+TOP               ?= GaloisSystem
+
+#########################################################################################
+# include shared variables
+#########################################################################################
+include $(base_dir)/variables.mk
+include $(base_dir)/common.mk
+
+top_verilog := $(build_dir)/galois.system.$(CONFIG).v
+top_mems    := $(build_dir)/galois.system.$(CONFIG).behav_srams.v
+
+$(top_verilog): $(TOP_FILE)
+	cp $< $@
+
+$(top_mems): $(TOP_SMEMS_FILE)
+	cp $< $@
+
+p2: $(top_verilog) $(top_mems)
+
+.PHONY: clean
+clean:
+	rm -rf $(gen_dir)

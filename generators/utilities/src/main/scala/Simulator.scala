@@ -93,7 +93,6 @@ object GenerateSimFiles extends App with HasGenerateSimConfig {
     "/csrc/remote_bitbang.h",
     "/csrc/remote_bitbang.cc",
     "/vsrc/EICG_wrapper.v",
-    "/vsrc/SSITHCore.v",
   ) ++ (sim match { // simulator specific files to include
     case VerilatorSimulator => Seq(
       "/csrc/emulator.cc",
@@ -108,8 +107,6 @@ object GenerateSimFiles extends App with HasGenerateSimConfig {
     firrtl.FileUtils.makeDirectory("./bootrom/")
     writeResource("/testchipip/bootrom/bootrom.rv64.img", "./bootrom/")
     writeResource("/testchipip/bootrom/bootrom.rv32.img", "./bootrom/")
-    writeResource("/ssithbootrom/bootrom.ssith.rv64.img", "./bootrom/")
-    writeResource("/ssithbootrom/bootrom.ssith.rv32.img", "./bootrom/")
     writeResource("/bootrom/bootrom.img", "./bootrom/")
   }
 

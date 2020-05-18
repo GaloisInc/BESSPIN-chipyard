@@ -11,6 +11,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
+import ssith.SSITHCoreType.SSITHCoreType
 
 case object SSITHCrossingKey extends Field[Seq[RocketCrossingParams]](List(RocketCrossingParams()))
 
@@ -55,9 +56,20 @@ case class SSITHCoreParams(
   val retireWidth: Int = 2
 }
 
+object SSITHCoreType extends Enumeration {
+  type SSITHCoreType = Value
+  val BLUESPECP1 = Value("bluespec_p1")
+  val BLUESPECP2 = Value("bluespec_p2")
+  val BLUESPECP3 = Value("bluespec_p3")
+  val CHISELP1   = Value("chisel_p1")
+  val CHISELP2   = Value("chisel_p2")
+  val CHISELP3   = Value("chisel_p3")
+}
+
 // TODO: Many parameters are incorrect (ex BTBParams, DCacheParams, ICacheParam)... figure out what to put in DTB
 case class SSITHTileParams(
                              name: Option[String] = Some("ssith_tile"),
+                             coreType: SSITHCoreType = SSITHCoreType.BLUESPECP2,
                              hartId: Int = 0,
                              beuAddr: Option[BigInt] = None,
                              blockerCtrlAddr: Option[BigInt] = None,
@@ -83,7 +95,6 @@ class SSITHTile(
     with HasIntegratedGFEDebug
     with HasIntegratedGFECLINT
     with HasIntegratedGFEPLIC
-    with HasMMIntDevice
 {
   /**
     * Setup parameters:
@@ -100,7 +111,7 @@ class SSITHTile(
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
-  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("galois,SSITH-bluespec_p2", "riscv")) {
+  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq(s"galois,SSITH-${SSITHParams.coreType}", "riscv")) {
     override def parent = Some(ResourceAnchors.cpus)
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
@@ -127,6 +138,7 @@ class SSITHTile(
 
   val fakeRocketParams = RocketTileParams(
     dcache = SSITHParams.dcache,
+    icache = SSITHParams.icache,
     hartId = SSITHParams.hartId,
     name   = SSITHParams.name,
     btb    = SSITHParams.btb,
@@ -207,6 +219,7 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
 
   // connect the SSITH core
   val core = Module(new SSITHCoreBlackbox(
+    coreType = outer.SSITHParams.coreType,
     // general core params
     axiAddrWidth = 64, // CONSTANT: addr width for TL can differ
     axiDataWidth = outer.beatBytes * 8,
@@ -218,8 +231,7 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
   core.RST_N := ~reset.asBool
   core.tv_verifier_info_tx_tready := true.B
 
-  // Connect TSI interrupt from MMInt to 16
-  core.cpu_external_interrupt_req := (outer.tsiInterruptNode.in(0)._1.asUInt() << 15).asUInt() | outer.getSSITHInterrupts()
+  core.cpu_external_interrupt_req := outer.getSSITHInterrupts()
 
   if (outer.SSITHParams.trace) {
     require(false, "Not currently implemented!")

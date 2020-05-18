@@ -1,6 +1,6 @@
 [submodule "rocket-chip"]
 	path = generators/rocket-chip
-	url = https://github.com/ucb-bar/rocket-chip.git
+	url = ../rocket-chip.git
 [submodule "testchipip"]
 	path = generators/testchipip
 	url = https://github.com/ucb-bar/testchipip.git
@@ -122,3 +122,6 @@
 [submodule "generators/ta1-lmco"]
 	path = generators/ta1-lmco
 	url = ../ta1-lmco
+[submodule "generators/ssith/repos/bluespec_p2"]
+	path = generators/ssith/repos/bluespec_p2
+	url = https://github.com/bluespec/Flute.git
