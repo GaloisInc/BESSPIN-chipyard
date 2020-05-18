@@ -1,4 +1,5 @@
 bootrom/*
+generated-src/
 docs/warnings.txt
 /Makefrag.pkgs
 target
