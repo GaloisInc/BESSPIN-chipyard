@@ -384,10 +384,22 @@ class RingSystemBusRocketConfig extends Config(
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
 
-class CloudGFERocketConfig extends Config(
+class CloudGFERocketConfig extends CloudGFERocketP2Config            // Backward compatibility
+
+class CloudGFERocketP2Config extends Config(
   new chipyard.iobinders.WithBlackBoxSimMem ++                       // drive the master AXI4 memory with a SimAXIMem
   new chipyard.config.WithGFEClint ++
   new freechips.rocketchip.subsystem.WithL1ICacheSets(32) ++
   new freechips.rocketchip.subsystem.WithL1DCacheSets(32) ++
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++            // single rocket-core
+  new chipyard.BaseSSITHConfig)                                     // modified "base" system
+
+class CloudGFERocketP1Config extends Config(
+  new chipyard.iobinders.WithSimAXIMem ++                           // drive the master AXI4 memory with a SimAXIMem
+  new chipyard.config.WithGFEClint ++
+  new freechips.rocketchip.subsystem.WithL1ICacheSets(64) ++
+  new freechips.rocketchip.subsystem.WithL1DCacheSets(64) ++
+  new freechips.rocketchip.subsystem.WithRV32 ++
+  new freechips.rocketchip.subsystem.WithEdgeDataBits(64) ++
+  new freechips.rocketchip.subsystem.WithNSmallCores(1) ++          // single rocket-core
   new chipyard.BaseSSITHConfig)                                     // modified "base" system
