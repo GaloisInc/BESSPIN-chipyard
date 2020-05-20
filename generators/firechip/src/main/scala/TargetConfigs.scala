@@ -198,25 +198,28 @@ class WithChiselP1   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP
 class WithChiselP2   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP2)
 class WithChiselP3   extends ssith.WithSSITHCoreType(ssith.SSITHCoreType.CHISELP3)
 
-class FireSimCloudGFERocketConfig extends FireSimCloudGFERocketP2Config // backward compatibility
+// backward compatibility configs
+class FireSimCloudGFERocketConfig extends FireSimCloudGFEChiselP2Config
+class FireSimCloudGFERocketP2Config extends FireSimCloudGFEChiselP2Config
+class FireSimCloudGFERocketP1Config extends FireSimCloudGFEChiselP1Config
 
-class FireSimCloudGFERocketP2Config extends Config(
+class FireSimCloudGFEChiselP2Config extends Config(
   new WithDefaultFireSimBridges ++
   new WithDefaultMemModel ++
   new chipyard.config.WithCloudGFEBootROM ++ // needed to support FireSim-as-top
   new WithFireSimConfigSSITHTweaks ++
-  new chipyard.CloudGFERocketP2Config)
+  new chipyard.CloudGFEChiselP2Config)
 
-class FireSimCloudGFERocketP1Config extends Config(
+class FireSimCloudGFEChiselP1Config extends Config(
   new WithDefaultFireSimBridges ++
   new WithDefaultMemModel ++
   new chipyard.config.WithCloudGFEBootROM ++ // needed to support FireSim-as-top
   new WithFireSimConfigSSITHTweaks ++
-  new chipyard.CloudGFERocketP1Config)
+  new chipyard.CloudGFEChiselP1Config)
 
-class FireSimSSITHConfig extends Config(
+class FireSimSSITHDropInConfig extends Config(
   new WithDefaultFireSimBridges ++
   new WithDefaultMemModel ++
   new chipyard.config.WithCloudGFEBootROM ++ // needed to support FireSim-as-top
   new WithFireSimConfigSSITHTweaks ++
-  new chipyard.SSITHConfig)
+  new chipyard.SSITHDropInConfig)

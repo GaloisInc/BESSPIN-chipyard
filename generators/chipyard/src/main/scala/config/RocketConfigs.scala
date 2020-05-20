@@ -385,7 +385,10 @@ class RingSystemBusRocketConfig extends Config(
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
 
-class CloudGFERocketConfig extends CloudGFERocketP2Config            // Backward compatibility
+// Backward compatibility configs
+class CloudGFERocketConfig extends CloudGFEChiselP2Config
+class CloudGFERocketP2Config extends CloudGFEChiselP2Config
+class CloudGFERocketP1Config extends CloudGFEChiselP1Config
 
 class With64bWideDataBuses extends Config((site, here, up) => {
   case SystemBusKey    => up(SystemBusKey   , site).copy(beatBytes = 8)
@@ -395,7 +398,7 @@ class With64bWideDataBuses extends Config((site, here, up) => {
   case FrontBusKey     => up(FrontBusKey    , site).copy(beatBytes = 8)
 })
 
-class CloudGFERocketP2Config extends Config(
+class CloudGFEChiselP2Config extends Config(
   new chipyard.iobinders.WithBlackBoxSimMem ++                       // drive the master AXI4 memory with a SimAXIMem
   new chipyard.config.WithGFEClint ++
   new freechips.rocketchip.subsystem.WithL1ICacheSets(32) ++
@@ -403,7 +406,7 @@ class CloudGFERocketP2Config extends Config(
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++            // single rocket-core
   new chipyard.BaseSSITHConfig)                                     // modified "base" system
 
-class CloudGFERocketP1Config extends Config(
+class CloudGFEChiselP1Config extends Config(
   new chipyard.iobinders.WithSimAXIMem ++                           // drive the master AXI4 memory with a SimAXIMem
   new chipyard.config.WithGFEClint ++
   new freechips.rocketchip.subsystem.WithL1ICacheSets(64) ++
