@@ -121,7 +121,7 @@
 	url = https://github.com/firesim/DRAMSim2.git
 [submodule "generators/ta1-lmco"]
 	path = generators/ta1-lmco
-	url = ../ta1-lmco
+	url = ../ta1-lmco.git
 [submodule "generators/ssith/repos/bluespec_p2"]
 	path = generators/ssith/repos/bluespec_p2
 	url = https://github.com/bluespec/Flute.git
