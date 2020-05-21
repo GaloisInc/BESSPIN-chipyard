@@ -99,6 +99,7 @@ class WithFireSimConfigSSITHTweaks extends Config(
   new WithSSITHTimebase(Some(BigInt(1000000L))) ++ // Needs to be re-run after setting the periphery frequency
   new WithPeripheryBusFrequency(BigInt(100000000L)) ++ // 100 MHz
   new WithoutClockGating ++
+  new WithTraceIO ++
   new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 2GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
