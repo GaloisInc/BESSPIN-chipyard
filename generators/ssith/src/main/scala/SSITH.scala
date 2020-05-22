@@ -239,7 +239,11 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
     val valInstruction = Wire(Bool())
     val iaddr = RegInit(p(BootROMParams).hang.asUInt(40.W))
     when (valInstruction === true.B) {
+      printf(s"Valid Instruction: %x", iaddr)
       iaddr := iaddr + Mux(core.tv_verifier_info_tx_tdata(23, 16) === 17.U, 4.U, 2.U)
+    }
+    when (core.tv_verifier_info_tx_tvalid) {
+      printf(s"TRACE: %x\n", core.tv_verifier_info_tx_tdata)
     }
     valInstruction := core.tv_verifier_info_tx_tvalid && core.tv_verifier_info_tx_tdata(15,0) === 769.U(16.W)
     outer.traceSourceNode.bundle(0).clock     := core.CLK

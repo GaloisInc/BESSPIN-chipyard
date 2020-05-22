@@ -26,6 +26,7 @@ import firesim.bridges._
 import firesim.configs._
 import chipyard.{BuildTop, WithSSITHTimebase}
 import chipyard.config.ConfigValName._
+import ssith.SSITHTilesKey
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => {
@@ -78,6 +79,7 @@ class WithNIC extends icenet.WithIceNIC(inBufFlits = 8192, ctrlQueueDepth = 64)
 class WithTraceIO extends Config((site, here, up) => {
   case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(trace = true))
   case ArianeTilesKey => up(ArianeTilesKey) map (tile => tile.copy(trace = true))
+  case SSITHTilesKey => up(SSITHTilesKey) map (tile => tile.copy(trace = true))
   case TracePortKey => Some(TracePortParams())
 })
 
