@@ -98,7 +98,7 @@ class WithFireSimConfigTweaks extends Config(
 
 // A slightly tweaked version for SSITH Blackbox builds
 class WithFireSimConfigSSITHTweaks extends Config(
-  new WithSSITHTimebase(Some(BigInt(1000000L))) ++ // Needs to be re-run after setting the periphery frequency
+  new WithSSITHTimebase(Some(BigInt(100000000L))) ++ // Needs to be re-run after setting the periphery frequency
   new WithPeripheryBusFrequency(BigInt(100000000L)) ++ // 100 MHz
   new WithoutClockGating ++
   new WithTraceIO ++
