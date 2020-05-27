@@ -235,7 +235,6 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
   core.cpu_external_interrupt_req := outer.getSSITHInterrupts()
 
   if (outer.SSITHParams.trace) {
-//    require(false, "Not currently implemented!")
     val valInstruction = Wire(Bool())
     val iaddr = RegInit(p(BootROMParams).hang.asUInt(40.W))
     when (valInstruction === true.B) {
@@ -245,13 +244,13 @@ class SSITHTileModuleImp(outer: SSITHTile) extends BaseTileModuleImp(outer)
     when (core.tv_verifier_info_tx_tvalid) {
       printf(s"TRACE: %x\n", core.tv_verifier_info_tx_tdata)
     }
-    valInstruction := core.tv_verifier_info_tx_tvalid && core.tv_verifier_info_tx_tdata(15,0) === 769.U(16.W)
+    valInstruction := core.tv_verifier_info_tx_tvalid && core.tv_verifier_info_tx_tdata(23,0) === 657153.U(24.W)
     outer.traceSourceNode.bundle(0).clock     := core.CLK
     outer.traceSourceNode.bundle(0).reset     := reset
     outer.traceSourceNode.bundle(0).valid     := valInstruction
-    outer.traceSourceNode.bundle(0).iaddr     := iaddr
-    outer.traceSourceNode.bundle(0).insn      := Mux(core.tv_verifier_info_tx_tdata(23, 16) === 17.U,
-      core.tv_verifier_info_tx_tdata(55, 24), core.tv_verifier_info_tx_tdata(39, 24).pad(32))
+    outer.traceSourceNode.bundle(0).iaddr     := core.tv_verifier_info_tx_tdata(87,24)
+    outer.traceSourceNode.bundle(0).insn      := Mux(core.tv_verifier_info_tx_tdata(95, 88) === 17.U,
+      core.tv_verifier_info_tx_tdata(127, 96), core.tv_verifier_info_tx_tdata(111, 96).pad(32))
     outer.traceSourceNode.bundle(0).priv      := 0.U
     outer.traceSourceNode.bundle(0).exception := 0.U
     outer.traceSourceNode.bundle(0).interrupt := 0.U
