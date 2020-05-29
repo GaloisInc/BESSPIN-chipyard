@@ -48,7 +48,8 @@ class WithToFromHostCaching extends Config((site, here, up) => {
   *
   * @param n amount of tiles to duplicate
   */
-class WithNSSITHCores(n: Int) extends Config(
+class WithNSSITHCores(n: Int) extends WithNSSITHDropInCores(n)
+class WithNSSITHDropInCores(n: Int) extends Config(
   new WithNormalSSITHSys ++
   new WithSSITHCoreType(SSITHCoreType.BLUESPECP2) ++ // Default to the Bluespec P2
   new Config((site, here, up) => {
@@ -101,7 +102,10 @@ object SSITHCoreTypeP2 {
 }
 
 class WithSSITHCoreType(coreType: SSITHCoreType) extends Config((site, here, up) => {
-  case SSITHTilesKey => up(SSITHTilesKey) map (tile => tile.copy(coreType = coreType,
-    dcache = Some(tile.dcache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16)),
-    icache = Some(tile.icache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16))))
+  case SSITHTilesKey => {
+    require(up(SSITHTilesKey).nonEmpty, "This configuration requires using the SSITHDropInConfig")
+    up(SSITHTilesKey) map (tile => tile.copy(coreType = coreType,
+      dcache = Some(tile.dcache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16)),
+      icache = Some(tile.icache.get.copy(nSets = if (SSITHCoreTypeP2(coreType)) 32 else 16))))
+  }
 })

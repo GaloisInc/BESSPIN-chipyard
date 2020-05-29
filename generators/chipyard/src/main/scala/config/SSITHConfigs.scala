@@ -12,10 +12,12 @@ import testchipip.{BlockDeviceController, BlockDeviceIO, BlockDeviceKey, BlockDe
 import sifive.blocks.devices.uart.TLUART
 import ssith.{SSITHTilesKey, WithMMIntDevice}
 
-class SSITHConfig extends Config(
+class SSITHConfig extends SSITHDropInConfig
+
+class SSITHDropInConfig extends Config(
     new chipyard.iobinders.WithSimAXIMem ++                        // drive the master AXI4 memory with a SimAXIMem (SimDRAM has some width issue with Verilator)
     new ssith.WithIntegratedPlicClintDebug ++                      // Removes duplicated PLIC, CLINT, and Debug Module, which are all inside core
-    new ssith.WithNSSITHCores(1) ++                                // single SSITH core
+    new ssith.WithNSSITHDropInCores(1) ++                          // single SSITH core
     new chipyard.BaseSSITHConfig)                                  // modified "base" system
 
 class BaseSSITHConfig extends Config(

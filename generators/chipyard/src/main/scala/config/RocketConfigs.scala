@@ -1,6 +1,7 @@
 package chipyard
 
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.subsystem.{ControlBusKey, FrontBusKey, MemoryBusKey, PeripheryBusKey, SystemBusKey}
 import ssith.WithMMIntDevice
 
 // --------------
@@ -384,10 +385,34 @@ class RingSystemBusRocketConfig extends Config(
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
 
-class CloudGFERocketConfig extends Config(
+// Backward compatibility configs
+class CloudGFERocketConfig extends CloudGFEChiselP2Config
+class CloudGFERocketP2Config extends CloudGFEChiselP2Config
+class CloudGFERocketP1Config extends CloudGFEChiselP1Config
+
+class With64bWideDataBuses extends Config((site, here, up) => {
+  case SystemBusKey    => up(SystemBusKey   , site).copy(beatBytes = 8)
+  case ControlBusKey   => up(ControlBusKey  , site).copy(beatBytes = 8)
+  case PeripheryBusKey => up(PeripheryBusKey, site).copy(beatBytes = 8)
+  case MemoryBusKey    => up(MemoryBusKey   , site).copy(beatBytes = 8)
+  case FrontBusKey     => up(FrontBusKey    , site).copy(beatBytes = 8)
+})
+
+class CloudGFEChiselP2Config extends Config(
   new chipyard.iobinders.WithBlackBoxSimMem ++                       // drive the master AXI4 memory with a SimAXIMem
   new chipyard.config.WithGFEClint ++
   new freechips.rocketchip.subsystem.WithL1ICacheSets(32) ++
   new freechips.rocketchip.subsystem.WithL1DCacheSets(32) ++
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++            // single rocket-core
+  new chipyard.BaseSSITHConfig)                                     // modified "base" system
+
+class CloudGFEChiselP1Config extends Config(
+  new chipyard.iobinders.WithSimAXIMem ++                           // drive the master AXI4 memory with a SimAXIMem
+  new chipyard.config.WithGFEClint ++
+  new freechips.rocketchip.subsystem.WithL1ICacheSets(64) ++
+  new freechips.rocketchip.subsystem.WithL1DCacheSets(64) ++
+  new freechips.rocketchip.subsystem.WithRV32 ++
+  new With64bWideDataBuses ++
+  new freechips.rocketchip.subsystem.WithEdgeDataBits(64) ++
+  new freechips.rocketchip.subsystem.WithNSmallCores(1) ++          // single rocket-core
   new chipyard.BaseSSITHConfig)                                     // modified "base" system

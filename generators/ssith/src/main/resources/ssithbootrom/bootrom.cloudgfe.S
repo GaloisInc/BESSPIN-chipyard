@@ -10,7 +10,9 @@ _hang: // reset vector
   li a0, 0x808           // MIE or MSIP bit
   li a1, 0x8
   csrw mie, a0       // set only MSIP in MIE CSR
+#if __riscv_xlen == 64
   csrw mideleg, zero // no delegation
+#endif
   csrs mstatus, a1   // set MIE in mstatus CSR
   li a1, 0xC200000
   sw zero, 0(a1)
