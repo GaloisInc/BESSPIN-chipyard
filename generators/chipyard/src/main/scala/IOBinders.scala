@@ -13,7 +13,7 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.uart._
 
 import testchipip._
-import chipyard.{CanHavePeripheryIceNICSSITHModuleImp, CanHavePeripheryBlockDeviceSSITHModuleImp}
+import chipyard.{CanHavePeripheryIceNICSSITHModuleImp}
 import tracegen.{HasTraceGenTilesModuleImp}
 
 import scala.reflect.{ClassTag}
@@ -70,11 +70,11 @@ class WithGPIOTiedOff extends OverrideIOBinder({
 })
 
 class WithSimBlockDevice extends OverrideIOBinder({
-  (c, r, s, top: CanHavePeripheryBlockDeviceSSITHModuleImp) => top.connectSimBlockDevice(c, r); Nil
+  (c, r, s, top: CanHavePeripheryBlockDeviceModuleImp) => top.connectSimBlockDevice(c, r); Nil
 })
 
 class WithBlockDeviceModel extends OverrideIOBinder({
-  (c, r, s, top: CanHavePeripheryBlockDeviceSSITHModuleImp) => top.connectBlockDeviceModel(); Nil
+  (c, r, s, top: CanHavePeripheryBlockDeviceModuleImp) => top.connectBlockDeviceModel(); Nil
 })
 
 class WithLoopbackNIC extends OverrideIOBinder({

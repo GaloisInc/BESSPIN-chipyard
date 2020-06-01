@@ -104,7 +104,7 @@ class WithFireSimConfigSSITHTweaks extends Config(
   new WithTraceIO ++
   new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 2GB
   new testchipip.WithTSI ++
-  new testchipip.WithBlockDevice ++
+  new testchipip.WithBlockDevice(BigInt(0x40015000)) ++
   new chipyard.config.WithUART
 )
 

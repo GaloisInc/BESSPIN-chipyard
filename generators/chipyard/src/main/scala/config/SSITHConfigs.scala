@@ -26,7 +26,6 @@ class BaseSSITHConfig extends Config(
     new chipyard.iobinders.WithTiedOffDebug ++                     // tie off debug (since we are using SimSerial for testing)
     new chipyard.iobinders.WithSimSerial ++                        // drive TSI with SimSerial for testing
     new testchipip.WithTSI ++                                      // use testchipip serial offchip link
-    new WithIceBlockAddress(BigInt(0x40015000)) ++
     new WithIceNICAddress(BigInt(0x62100000)) ++
     new WithMMIntDevice(BigInt(0x2000000)) ++
     new WithSSITHTimebase ++
@@ -48,51 +47,6 @@ class WithSSITHTimebase(timebase: Option[BigInt] = None) extends Config((site, h
     case RocketTilesKey => up(RocketTilesKey, site) map { r =>
         r.copy(core = r.core.copy(bootFreqHz = up(PeripheryBusKey).frequency)) }
 })
-
-// There's no good way to change the block or net device address, so override the traits here
-
-case object IceBlockAddress extends Field[Option[BigInt]](None)
-
-class WithIceBlockAddress(address: BigInt) extends Config((site, here, up) => {
-    case IceBlockAddress => Some(address)
-})
-
-trait CanHavePeripheryBlockDeviceSSITH { this: BaseSubsystem =>
-    private val address = p(IceBlockAddress).getOrElse(BigInt(0x10015000))
-    private val portName = "blkdev-controller"
-
-    val controller = p(BlockDeviceKey).map { _ =>
-        val c = LazyModule(new BlockDeviceController(
-            address, pbus.beatBytes))
-
-        pbus.toVariableWidthSlave(Some(portName))  { c.mmio }
-        fbus.fromPort(Some(portName))() :=* c.mem
-        ibus.fromSync := c.intnode
-        c
-    }
-}
-
-trait CanHavePeripheryBlockDeviceSSITHModuleImp extends LazyModuleImp {
-    val outer: CanHavePeripheryBlockDeviceSSITH
-
-    val bdev = p(BlockDeviceKey).map { _ =>
-        val io = IO(new BlockDeviceIO)
-        io <> outer.controller.get.module.io.bdev
-        io
-    }
-
-    def connectSimBlockDevice(clock: Clock, reset: Bool) {
-        val sim = Module(new SimBlockDevice)
-        sim.io.clock := clock
-        sim.io.reset := reset
-        sim.io.bdev <> bdev.get
-    }
-
-    def connectBlockDeviceModel() {
-        val model = Module(new BlockDeviceModel(16))
-        model.io <> bdev.get
-    }
-}
 
 case object IceNICAddress extends Field[Option[BigInt]](None)
 

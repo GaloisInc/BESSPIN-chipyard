@@ -11,7 +11,7 @@ import freechips.rocketchip.subsystem.CanHaveMasterAXI4MemPortModuleImp
 import freechips.rocketchip.tile.RocketTile
 import sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
 import testchipip.{CanHavePeripheryBlockDeviceModuleImp, CanHavePeripherySerialModuleImp, CanHaveTraceIOModuleImp}
-import chipyard.{CanHavePeripheryBlockDeviceSSITHModuleImp, CanHavePeripheryIceNICSSITHModuleImp}
+import chipyard.{CanHavePeripheryIceNICSSITHModuleImp}
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{AXI4EdgeSummary, CompleteConfig, FASEDBridge}
 import midas.targetutils.MemModelAnnotation
@@ -37,7 +37,7 @@ class WithUARTBridge extends OverrideIOBinder({
 })
 
 class WithBlockDeviceBridge extends OverrideIOBinder({
-  (c, r, s, target: CanHavePeripheryBlockDeviceSSITHModuleImp) => target.bdev.map(b => BlockDevBridge(b, target.reset.toBool)(target.p)).toSeq
+  (c, r, s, target: CanHavePeripheryBlockDeviceModuleImp) => target.bdev.map(b => BlockDevBridge(b, target.reset.toBool)(target.p)).toSeq
 })
 
 class WithFASEDBridge extends OverrideIOBinder({
