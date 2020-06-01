@@ -11,7 +11,6 @@ import freechips.rocketchip.subsystem.CanHaveMasterAXI4MemPortModuleImp
 import freechips.rocketchip.tile.RocketTile
 import sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
 import testchipip.{CanHavePeripheryBlockDeviceModuleImp, CanHavePeripherySerialModuleImp, CanHaveTraceIOModuleImp}
-import chipyard.{CanHavePeripheryIceNICSSITHModuleImp}
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{AXI4EdgeSummary, CompleteConfig, FASEDBridge}
 import midas.targetutils.MemModelAnnotation
@@ -22,6 +21,7 @@ import ariane.ArianeTile
 import boom.common.BoomTile
 import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
+import icenet.CanHavePeripheryIceNICModuleImp
 import ssith.SSITHTile
 
 class WithSerialBridge extends OverrideIOBinder({
@@ -29,7 +29,7 @@ class WithSerialBridge extends OverrideIOBinder({
 })
 
 class WithNICBridge extends OverrideIOBinder({
-  (c, r, s, target: CanHavePeripheryIceNICSSITHModuleImp) => target.net.map(n => NICBridge(n)(target.p)).toSeq
+  (c, r, s, target: CanHavePeripheryIceNICModuleImp) => target.net.map(n => NICBridge(n)(target.p)).toSeq
 })
 
 class WithUARTBridge extends OverrideIOBinder({

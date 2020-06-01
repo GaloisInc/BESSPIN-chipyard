@@ -71,9 +71,7 @@ class WithScalaTestFeatures extends Config((site, here, up) => {
 class DDR3FRFCFS extends FRFCFS16GBQuadRank
 class DDR3FRFCFSLLC4MB extends FRFCFS16GBQuadRankLLC4MB
 
-class WithNIC extends icenet.WithIceNIC(inBufFlits = 8192, ctrlQueueDepth = 64)
-
-
+class WithNIC extends icenet.WithIceNIC(inBufFlits = 8192, ctrlQueueDepth = 64, address = BigInt(0x62100000))
 
 // Enables tracing on all cores
 class WithTraceIO extends Config((site, here, up) => {

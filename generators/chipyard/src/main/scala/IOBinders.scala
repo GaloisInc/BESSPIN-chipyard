@@ -13,7 +13,7 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.uart._
 
 import testchipip._
-import chipyard.{CanHavePeripheryIceNICSSITHModuleImp}
+import icenet._
 import tracegen.{HasTraceGenTilesModuleImp}
 
 import scala.reflect.{ClassTag}
@@ -78,11 +78,11 @@ class WithBlockDeviceModel extends OverrideIOBinder({
 })
 
 class WithLoopbackNIC extends OverrideIOBinder({
-  (c, r, s, top: CanHavePeripheryIceNICSSITHModuleImp) => top.connectNicLoopback(); Nil
+  (c, r, s, top: CanHavePeripheryIceNICModuleImp) => top.connectNicLoopback(); Nil
 })
 
 class WithSimNIC extends OverrideIOBinder({
-  (c, r, s, top: CanHavePeripheryIceNICSSITHModuleImp) => top.connectSimNetwork(c, r); Nil
+  (c, r, s, top: CanHavePeripheryIceNICModuleImp) => top.connectSimNetwork(c, r); Nil
 })
 
 class WithUARTAdapter extends OverrideIOBinder({
