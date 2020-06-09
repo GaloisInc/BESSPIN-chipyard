@@ -52,7 +52,7 @@ trait CanHaveChosenDTSEntry {this: BaseSubsystem => {
     val chosen = new Device {
       def describe(resources: ResourceBindings): Description = {
         Description("chosen", Map(
-            "bootargs" -> Seq(ResourceString("earlyprintk console=ttySIF0,3686400"))) ++
+            "bootargs" -> Seq(ResourceString("earlyprintk console=ttySIF0"))) ++
           resources("stdout").zipWithIndex.map { case (Binding(_, value), i) =>
               (s"stdout-path" -> Seq(value))})
       }
