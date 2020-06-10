@@ -88,6 +88,11 @@ class WithUART extends Config((site, here, up) => {
     UARTParams(address = 0x62300000L, nTxEntries = 256, nRxEntries = 256))
 })
 
+class WithFixedBaudUART(baud: Int) extends Config((site, here, up) => {
+  case PeripheryUARTKey => Seq(
+    UARTParams(address = 0x62300000L, nTxEntries = 256, nRxEntries = 256, fixedBaudRate = Some(baud)))
+})
+
 class WithNoGPIO extends Config((site, here, up) => {
   case PeripheryGPIOKey => Seq()
 })
