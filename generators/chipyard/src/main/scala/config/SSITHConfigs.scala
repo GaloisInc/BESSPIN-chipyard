@@ -29,7 +29,7 @@ class BaseSSITHConfig extends Config(
     new WithMMIntDevice(BigInt(0x2000000)) ++
     new WithSSITHTimebase ++
     new chipyard.config.WithNoGPIO ++                              // no top-level GPIO pins (overrides default set in sifive-blocks)
-    new chipyard.config.WithUART ++                                // add a UART
+    new chipyard.config.WithFixedBaudUART(115200) ++               // add a UART
     new ssith.WithSSITHMemPort ++                                  // Change location of main memory
     new chipyard.config.WithCloudGFEBootROM ++                     // Use the SSITH Bootrom to workaround incompatibility issues
     new freechips.rocketchip.subsystem.WithNoMMIOPort ++           // no top-level MMIO master port (overrides default set in rocketchip)
