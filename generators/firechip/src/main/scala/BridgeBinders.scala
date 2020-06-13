@@ -44,6 +44,14 @@ class WithRandomBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripherySSITHRNGModuleImp) => target.hwrngio.map(r => RandomBridge(r)(target.p)).toSeq
 })
 
+class WithDMIBridge extends OverrideIOBinder({
+  (c, r, s, target: HasPeripheryDebugModuleImp) => target.debug.map(db => db.clockeddmi.map(cdmi => {
+    cdmi.dmiClock := c
+    cdmi.dmiReset := r
+    DMIBridge(cdmi.dmi)(target.p)
+  })).toSeq
+})
+
 class WithFASEDBridge extends OverrideIOBinder({
   (c, r, s, t: CanHaveMasterAXI4MemPortModuleImp) => {
     implicit val p = t.p
@@ -97,9 +105,10 @@ class WithFireSimMultiCycleRegfile extends ComposeIOBinder({
 // Shorthand to register all of the provided bridges above
 class WithDefaultFireSimBridges extends Config(
   new chipyard.iobinders.WithGPIOTiedOff ++
-  new chipyard.iobinders.WithTiedOffDebug ++
+  //new chipyard.iobinders.WithTiedOffDebug ++
   new chipyard.iobinders.WithTieOffInterrupts ++
   new WithRandomBridge ++
+  new WithDMIBridge ++
   new WithSerialBridge ++
   new WithNICBridge ++
   new WithUARTBridge ++
