@@ -5,6 +5,10 @@
 .section .text.hang, "ax", @progbits
 .globl _hang
 _hang: // reset vector
+  li t1, 0x2000000   // set mmint in t1
+  lw a1, 8(t1)
+  li s0, 0           // tells set_regs we arrived from _hang
+  bnez a1, set_regs  // If debug is enabled, branch to set regs and loop 
   la a0, _start      // on MSIP interrupt, go to _start
   csrw mtvec, a0
   li a0, 0x808           // MIE or MSIP bit
@@ -20,8 +24,8 @@ _hang: // reset vector
   li a0, 0x2
   sw a0, 0(a1)
   li a0, 7
-  li a1, 0xC000000
-  sw a0, 0x04(a1)
+  li t2, 0xC000000   // store PLIC base address in t2
+  sw a0, 0x04(t2)
 wfi_loop: // wait for MSIP interrupt to start program execution
   wfi
   j wfi_loop
@@ -30,19 +34,19 @@ wfi_loop: // wait for MSIP interrupt to start program execution
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
-  li a1, 0x2000000 // base address of mmint
   li s0, 0xC200004
-  lw a2, 0(s0)
-  sw zero, 0(a1)   // clear the interrupt
+  lw a2, 4(t2)
+  sw zero, 0(t1)   // clear the interrupt in MMInt
   sw a2, 0(s0)     // clear the PLIC
   li s0, 0xC002000 // Disable the PLIC
-  li s1, 0xC000000 
   sw zero, 0(s0)
-  sw zero, 0x04(s1)
+  sw zero, 4(t2)
   li a0, DRAM_BASE // program reset vector
   csrw mepc, a0    // return from interrupt to start of user program
+set_regs:
   csrr a0, mhartid // hartid for next level bootloader
   la a1, _dtb      // dtb address for next level bootloader
+  beqz s0, wfi_loop // If we reached this code due to wait for debug, go to loop
   li a2, 0x80      // set mstatus MPIE to 0
   csrc mstatus, a2
   mret

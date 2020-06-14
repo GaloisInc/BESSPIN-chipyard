@@ -5,7 +5,7 @@ package firesim.firesim
 import chisel3._
 import chisel3.experimental.annotate
 import freechips.rocketchip.config.{Config, Field, Parameters}
-import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 import freechips.rocketchip.devices.debug.HasPeripheryDebugModuleImp
 import freechips.rocketchip.subsystem.CanHaveMasterAXI4MemPortModuleImp
 import freechips.rocketchip.tile.RocketTile
@@ -21,8 +21,9 @@ import ariane.ArianeTile
 import boom.common.BoomTile
 import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
+import freechips.rocketchip.interrupts.{IntSinkNode, IntSinkPortSimple, IntSourceNode, IntSourcePortSimple}
 import icenet.CanHavePeripheryIceNICModuleImp
-import ssith.{CanHavePeripherySSITHRNGModuleImp, SSITHTile}
+import ssith._
 
 class WithSerialBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripherySerialModuleImp) => target.serial.map(s => SerialBridge(s)(target.p)).toSeq
@@ -46,10 +47,27 @@ class WithRandomBridge extends OverrideIOBinder({
 
 class WithDMIBridge extends OverrideIOBinder({
   (c, r, s, target: HasPeripheryDebugModuleImp) => target.debug.map(db => db.clockeddmi.map(cdmi => {
+    implicit val p = target.p
     cdmi.dmiClock := c
     cdmi.dmiReset := r
-    DMIBridge(cdmi.dmi)(target.p)
+    target match {
+      case t: CanHavePeripheryMMIntDeviceImp => {
+        if (t.mmint_io.isDefined) {
+          val bridge = DMIBridge(cdmi.dmi, true)
+          t.mmint_io.get.get.connected := bridge.io.dbg_connected
+          bridge.io.dbg_memloaded := t.mmint_io.get.get.startSignal
+          bridge
+        } else {
+          DMIBridge(cdmi.dmi, false)
+        }
+      }
+      case _ => DMIBridge(cdmi.dmi, false)
+    }
   })).toSeq
+})
+
+class WithDMIBridgeConfig extends Config((site, here, up) => {
+  case MMIntDeviceKey => up(MMIntDeviceKey) map { m => m.copy(exposeTopIO = true) }
 })
 
 class WithFASEDBridge extends OverrideIOBinder({
@@ -109,6 +127,7 @@ class WithDefaultFireSimBridges extends Config(
   new chipyard.iobinders.WithTieOffInterrupts ++
   new WithRandomBridge ++
   new WithDMIBridge ++
+  new WithDMIBridgeConfig ++
   new WithSerialBridge ++
   new WithNICBridge ++
   new WithUARTBridge ++
