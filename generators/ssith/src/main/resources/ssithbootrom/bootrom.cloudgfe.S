@@ -6,7 +6,7 @@
 .globl _hang
 _hang: // reset vector
   li t1, 0x2000000   // set mmint in t1
-  lw a1, 8(t1)
+  lw a1, 4(t1)
   li s0, 0           // tells set_regs we arrived from _hang
   bnez a1, set_regs  // If debug is enabled, branch to set regs and loop 
   la a0, _start      // on MSIP interrupt, go to _start
