@@ -22,7 +22,7 @@ import boom.common.BoomTile
 import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
 import icenet.CanHavePeripheryIceNICModuleImp
-import ssith.SSITHTile
+import ssith.{CanHavePeripherySSITHRNGModuleImp, SSITHTile}
 
 class WithSerialBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripherySerialModuleImp) => target.serial.map(s => SerialBridge(s)(target.p)).toSeq
@@ -38,6 +38,10 @@ class WithUARTBridge extends OverrideIOBinder({
 
 class WithBlockDeviceBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripheryBlockDeviceModuleImp) => target.bdev.map(b => BlockDevBridge(b, target.reset.toBool)(target.p)).toSeq
+})
+
+class WithRandomBridge extends OverrideIOBinder({
+  (c, r, s, target: CanHavePeripherySSITHRNGModuleImp) => target.hwrngio.map(r => RandomBridge(r)(target.p)).toSeq
 })
 
 class WithFASEDBridge extends OverrideIOBinder({
@@ -95,6 +99,7 @@ class WithDefaultFireSimBridges extends Config(
   new chipyard.iobinders.WithGPIOTiedOff ++
   new chipyard.iobinders.WithTiedOffDebug ++
   new chipyard.iobinders.WithTieOffInterrupts ++
+  new WithRandomBridge ++
   new WithSerialBridge ++
   new WithNICBridge ++
   new WithUARTBridge ++

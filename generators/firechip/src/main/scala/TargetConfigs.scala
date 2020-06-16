@@ -100,6 +100,7 @@ class WithFireSimConfigSSITHTweaks extends Config(
   new WithPeripheryBusFrequency(BigInt(100000000L)) ++ // 100 MHz
   new WithoutClockGating ++
   new WithTraceIO ++
+  new ssith.WithSSITHRNGDevice(BigInt(0x63000000)) ++ // RNG device
   new freechips.rocketchip.subsystem.WithExtMemSize(0x80000000L) ++ // 2GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice(BigInt(0x40015000)) ++
