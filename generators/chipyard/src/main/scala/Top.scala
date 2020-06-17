@@ -30,6 +30,7 @@ class Top(implicit p: Parameters) extends System
 }
 
 class TopModule[+L <: Top](l: L) extends SystemModule(l)
+  with ssith.CanHavePeripheryMMIntDeviceImp
   with testchipip.CanHaveTraceIOModuleImp
   with ssith.CanHavePeripherySSITHRNGModuleImp
   with testchipip.CanHavePeripheryBlockDeviceModuleImp
