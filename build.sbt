@@ -114,7 +114,14 @@ lazy val rocketMacros  = (project in rocketChipDir / "macros")
 lazy val rocketConfig = (project in rocketChipDir / "api-config-chipsalliance/build-rules/sbt")
   .settings(commonSettings)
 
-lazy val ta1lmco = (project in file("generators/ta1-lmco/combo01"))
+lazy val isP1Processor = sys.env.get("TARGET_CONFIG").getOrElse(sys.env.get("CONFIG").getOrElse("")).contains("P1")
+lazy val ta1lmcoPipeline = if (isP1Processor) {
+  file("generators/ta1-lmco/mod010a")
+} else {
+  file("generators/ta1-lmco/combo01")
+}
+
+lazy val ta1lmco = (project in ta1lmcoPipeline)
   .dependsOn(chisel)
   .settings(
       commonSettings,
