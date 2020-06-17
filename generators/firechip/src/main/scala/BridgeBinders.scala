@@ -22,7 +22,7 @@ import boom.common.BoomTile
 import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
 import icenet.CanHavePeripheryIceNICModuleImp
-import ssith.SSITHTile
+import ssith._
 
 class WithSerialBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripherySerialModuleImp) => target.serial.map(s => SerialBridge(s)(target.p)).toSeq
@@ -38,6 +38,35 @@ class WithUARTBridge extends OverrideIOBinder({
 
 class WithBlockDeviceBridge extends OverrideIOBinder({
   (c, r, s, target: CanHavePeripheryBlockDeviceModuleImp) => target.bdev.map(b => BlockDevBridge(b, target.reset.toBool)(target.p)).toSeq
+})
+
+class WithRandomBridge extends OverrideIOBinder({
+  (c, r, s, target: CanHavePeripherySSITHRNGModuleImp) => target.hwrngio.map(r => RandomBridge(r)(target.p)).toSeq
+})
+
+class WithDMIBridge extends OverrideIOBinder({
+  (c, r, s, target: HasPeripheryDebugModuleImp) => target.debug.map(db => db.clockeddmi.map(cdmi => {
+    implicit val p = target.p
+    cdmi.dmiClock := c
+    cdmi.dmiReset := r
+    target match {
+      case t: CanHavePeripheryMMIntDeviceImp => {
+        if (t.mmint_io.isDefined) {
+          val bridge = DMIBridge(cdmi.dmi, true)
+          t.mmint_io.get.get.connected := bridge.io.dbg_connected
+          bridge.io.dbg_memloaded := t.mmint_io.get.get.startSignal
+          bridge
+        } else {
+          DMIBridge(cdmi.dmi, false)
+        }
+      }
+      case _ => DMIBridge(cdmi.dmi, false)
+    }
+  })).toSeq
+})
+
+class WithDMIBridgeConfig extends Config((site, here, up) => {
+  case MMIntDeviceKey => up(MMIntDeviceKey) map { m => m.copy(exposeTopIO = true) }
 })
 
 class WithFASEDBridge extends OverrideIOBinder({
@@ -93,8 +122,11 @@ class WithFireSimMultiCycleRegfile extends ComposeIOBinder({
 // Shorthand to register all of the provided bridges above
 class WithDefaultFireSimBridges extends Config(
   new chipyard.iobinders.WithGPIOTiedOff ++
-  new chipyard.iobinders.WithTiedOffDebug ++
+  //new chipyard.iobinders.WithTiedOffDebug ++
   new chipyard.iobinders.WithTieOffInterrupts ++
+  new WithRandomBridge ++
+  new WithDMIBridge ++
+  new WithDMIBridgeConfig ++
   new WithSerialBridge ++
   new WithNICBridge ++
   new WithUARTBridge ++

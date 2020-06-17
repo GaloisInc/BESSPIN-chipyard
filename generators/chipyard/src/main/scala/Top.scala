@@ -14,6 +14,7 @@ import freechips.rocketchip.devices.tilelink._
 // DOC include start: Top
 class Top(implicit p: Parameters) extends System
   with ssith.CanHavePeripheryMMIntDevice // Should be at the top to ensure it gets assigned interrupt 1
+  with ssith.CanHavePeripherySSITHRNGDevice // HW RNG interface to host
   with testchipip.CanHaveTraceIO // Enables optionally adding trace IO
   with testchipip.CanHaveBackingScratchpad // Enables optionally adding a backing scratchpad
   with testchipip.CanHavePeripheryBlockDevice // Enables optionally adding the block device
@@ -29,7 +30,9 @@ class Top(implicit p: Parameters) extends System
 }
 
 class TopModule[+L <: Top](l: L) extends SystemModule(l)
+  with ssith.CanHavePeripheryMMIntDeviceImp
   with testchipip.CanHaveTraceIOModuleImp
+  with ssith.CanHavePeripherySSITHRNGModuleImp
   with testchipip.CanHavePeripheryBlockDeviceModuleImp
   with testchipip.CanHavePeripherySerialModuleImp
   with sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
