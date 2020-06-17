@@ -34,17 +34,6 @@ class MMInt(address: BigInt, beatBytes: Int)(implicit p: Parameters) extends Laz
     sinkFn = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
     outputRequiresInput = false)
 
-//  val debugBridgeIntInNode: IntNexusNode = IntNexusNode(
-//    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1))) },
-//    sinkFn = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
-//    inputRequiresOutput = false,
-//    outputRequiresInput = false)
-//  val debugBridgeIntOutNode: IntNexusNode = IntNexusNode(
-//    sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1))) },
-//    sinkFn = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
-//    inputRequiresOutput = false,
-//    outputRequiresInput = false)
-
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val debugStatus = new DebugBridgeStatus
@@ -57,11 +46,6 @@ class MMInt(address: BigInt, beatBytes: Int)(implicit p: Parameters) extends Laz
 
     dbgConnectedReg := io.debugStatus.connected
     io.debugStatus.startSignal := intReg.asBool()
-//    val (dbgBridgePresentInt, _) = debugBridgeIntInNode.in.unzip
-//    dbgBridgePresentReg := dbgBridgePresentInt.headOption.getOrElse(false.B)
-//
-//    val (dbgBridgeStatusInt, _) = debugBridgeIntOutNode.out.unzip
-//    dbgBridgeStatusInt.map { _ := intReg }
 
     node.regmap(0 -> Seq(RegField(1, intReg, RegFieldDesc(s"int_0", s"Interrupt 0", reset=Some(0)))),
       0x4 -> Seq(RegField.r(1, dbgConnectedReg, RegFieldDesc("dbgconnected", "Debug Bridge Connected", reset=Some(0)))))

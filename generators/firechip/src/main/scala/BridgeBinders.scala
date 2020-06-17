@@ -5,7 +5,7 @@ package firesim.firesim
 import chisel3._
 import chisel3.experimental.annotate
 import freechips.rocketchip.config.{Config, Field, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule, ValName}
+import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.devices.debug.HasPeripheryDebugModuleImp
 import freechips.rocketchip.subsystem.CanHaveMasterAXI4MemPortModuleImp
 import freechips.rocketchip.tile.RocketTile
@@ -21,7 +21,6 @@ import ariane.ArianeTile
 import boom.common.BoomTile
 import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
 import chipyard.HasChipyardTilesModuleImp
-import freechips.rocketchip.interrupts.{IntSinkNode, IntSinkPortSimple, IntSourceNode, IntSourcePortSimple}
 import icenet.CanHavePeripheryIceNICModuleImp
 import ssith._
 
