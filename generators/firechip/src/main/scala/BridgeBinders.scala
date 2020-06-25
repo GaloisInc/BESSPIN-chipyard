@@ -66,7 +66,7 @@ class WithDMIBridge extends OverrideIOBinder({
 })
 
 class WithDMIBridgeConfig extends Config((site, here, up) => {
-  case MMIntDeviceKey => up(MMIntDeviceKey) map { m => m.copy(exposeTopIO = true) }
+  case MMIntDeviceKey => up(MMIntDeviceKey) map { m => if (up(SSITHTilesKey).nonEmpty) m else m.copy(exposeTopIO = true) }
 })
 
 class WithFASEDBridge extends OverrideIOBinder({
