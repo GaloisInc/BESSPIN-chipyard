@@ -122,7 +122,7 @@ lazy val ta1lmcoPipeline = if (isP1Processor) {
 }
 
 lazy val ta1lmco = (project in ta1lmcoPipeline)
-  .dependsOn(chisel)
+  .dependsOn(chisel, midasTargetUtils)
   .settings(
       commonSettings,
       libraryDependencies ++= Seq(
