@@ -83,15 +83,6 @@
 [submodule "tools/firrtl-interpreter"]
 	path = tools/firrtl-interpreter
 	url = https://github.com/freechipsproject/firrtl-interpreter.git
-[submodule "vlsi/hammer-cadence-plugins"]
-	path = vlsi/hammer-cadence-plugins
-	url = https://github.com/ucb-bar/hammer-cadence-plugins.git
-[submodule "vlsi/hammer-synopsys-plugins"]
-	path = vlsi/hammer-synopsys-plugins
-	url = https://github.com/ucb-bar/hammer-synopsys-plugins.git
-[submodule "vlsi/hammer-mentor-plugins"]
-	path = vlsi/hammer-mentor-plugins
-	url = https://github.com/ucb-bar/hammer-mentor-plugins.git
 [submodule "toolchains/qemu"]
 	path = toolchains/qemu
 	url = https://github.com/qemu/qemu.git
