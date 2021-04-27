@@ -1,5 +1,7 @@
 ![CHIPYARD](https://github.com/ucb-bar/chipyard/raw/master/docs/_static/images/chipyard-logo-full.png)
 
+This repository is a fork of the [Chipyard repo](https://github.com/ucb-bar/chipyard) ported for the BESSPIN project.
+
 # Chipyard Framework [![CircleCI](https://circleci.com/gh/ucb-bar/chipyard/tree/master.svg?style=svg)](https://circleci.com/gh/ucb-bar/chipyard/tree/master)
 
 ## Using Chipyard
